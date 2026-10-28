@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     app.setApplicationDisplayName("C clicker");
     app.setOrganizationName("ObsidianClick");
     app.setApplicationName("ObsidianClick");
-    app.setApplicationVersion("0.5.0");
+    app.setApplicationVersion("0.6.0");
     app.setWindowIcon(QIcon(":/qt/qml/CClicker/assets/app-icon.png"));
     for (const char *face : {"Regular", "Medium", "SemiBold", "Bold"})
         QFontDatabase::addApplicationFont(QString(":/qt/qml/CClicker/assets/fonts/Inter-%1.ttf").arg(face));

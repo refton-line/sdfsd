@@ -1,4 +1,4 @@
-# C clicker 0.5.0
+# C clicker 0.6.0
 
 Native C++20 / Qt Quick 6.8.3 auto clicker for Windows 10/11 x64. Grey-white Liquid Glass interface,
 an iPhone-style Dynamic Island, two click engines and an uncapped custom rate. English by default,
@@ -16,11 +16,21 @@ What a target app actually receives depends on Windows and that app. Legit is ti
 practically tops out around ~1000 CPS. Uncapped throughput is a Blatant feature.
 
 ## Interface
-- **Dynamic Island.** It boots at the centre of the window, then rises into the title bar. Its views are idle (mode + target), countdown ring, live (mode, activity bars, measured CPS), expanded on hover or click (CPS, clicks, time, stop), mode/profile/material notices, errors and a run summary. All views morph with springs and fade through blur.
-- **Island over other windows.** While you click in another app, a copy sits at the top of the screen. It never takes focus or mouse input, so the target window keeps foreground. You can turn it off in Appearance.
-- **Material.** *Liquid Glass*: translucent, with specular rims and drifting light (iOS 26/27 style). *Solid*: opaque iOS 14-style cards. Switching between them morphs instead of snapping.
-- **Language.** English (default) or Русский. The content cross-fades when you switch.
-- Pages: Clicker, Hotkeys, Profiles, Appearance, Language. Each one has its own icon.
+Two materials, and switching between them changes the whole app. The new look washes over the old one in a circle that grows from the pointer and has a bright liquid front.
+
+| | **Liquid Glass** (iOS 26/27) | **Solid** (iOS 14) |
+|---|---|---|
+| Surfaces | Real glass. A shader refracts and frosts what is behind each panel and adds a specular rim and slight dispersion, over a slowly moving grey-white backdrop | Opaque white inset-grouped sections on `#f2f2f7` |
+| Navigation | Floating glass tab bar at the bottom. The selection is a clear lens that magnifies, stretches and swells as it moves | iPadOS 14 sidebar with a large title, blue line icons and a filled blue selection |
+| Controls | Glass capsules; switch knobs turn into a clear lens while pressed | iOS 14 controls: segmented thumb, classic switch, stepper pill, blue tint |
+| Motion | Springs with overshoot; pages lift and settle; sheets spring in over a blurred window | Eased curves without overshoot; pages slide like a push; sheets slide up over a dimmed window |
+
+**Dynamic Island.** It boots at the centre of the window and rises into the title bar. It morphs on springs with a velocity-driven squash and stretch, and its content is clipped to the moving shape. All motion is continuous: the waveform, the countdown ring and the pulse never step or pause.
+- Compact views: mode and target CPS, countdown ring, live waveform with measured CPS, notices, errors, run summary.
+- **Hover expands it at once** (a click pins it, Esc unpins it) into a control panel: Legit/Blatant switch, a large CPS readout with −/+, hotkeys or live clicks and time, and a big Start/Cancel/Stop button.
+- **Island over other windows:** while you click in another app, a copy sits at the top of the screen. It never takes focus or mouse input.
+
+**Language:** English (default) or Русский.
 
 ## Hotkeys and profiles
 The physical-key binding engine from 0.4.x is unchanged: Raw Input, 1–3 keys per shortcut, up to 8
@@ -34,7 +44,7 @@ the cursor stays inside it. A press is always followed by its release. Closing t
 before the closing animation plays. The EXE is unsigned; do not disable Windows protection to run it.
 
 ## Build
-Requires CMake ≥ 3.24, C++20 and Qt 6.8.3 (Quick, QuickControls2, Concurrent).
+Requires CMake ≥ 3.24, C++20 and Qt 6.8.3 (Quick, QuickControls2, Concurrent, ShaderTools for build-time shader compilation).
 ```sh
 # Native (Linux/Windows) build and tests
 cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt/6.8.3/gcc_64 -DCMAKE_BUILD_TYPE=Release

@@ -38,7 +38,7 @@ ModalSheet {
         focus: true
         Rectangle {
             id: badge
-            width: 36; height: 36; radius: 12
+            width: 36; height: 36; radius: Theme.isGlass ? 12 : 8
             color: picker.targetBinding === 0 ? Theme.legit : Theme.blatant
             Icon { anchors.centerIn: parent; name: picker.targetBinding === 0 ? "play" : "stop"; size: 18; color: "#ffffff" }
         }
@@ -48,16 +48,17 @@ ModalSheet {
             text: I18n.t(picker.targetBinding === 0 ? "keys.start" : "keys.stop")
             font.pixelSize: Theme.title; font.weight: Font.DemiBold
         }
-        Segmented {
+        SegmentedControl {
             anchors.right: closeButton.left; anchors.rightMargin: 12
             anchors.verticalCenter: badge.verticalCenter
-            width: 300; height: 38
+            width: 300
             options: [{ text: I18n.t("sheet.single"), icon: "keyboard" }, { text: I18n.t("sheet.combo"), icon: "stack" }]
             currentIndex: picker.combination ? 1 : 0
             onActivated: index => picker.engine.captureCombination = index === 1
         }
-        GlassButton {
+        AppButton {
             id: closeButton
+            kind: "plain"
             anchors.right: parent.right
             anchors.verticalCenter: badge.verticalCenter
             width: 38; height: 38
@@ -69,7 +70,7 @@ ModalSheet {
         Item {
             id: chosen
             y: 56; width: parent.width; height: 48
-            Rectangle { anchors.fill: parent; radius: 16; color: Theme.well }
+            Rectangle { anchors.fill: parent; radius: Theme.isGlass ? 16 : 10; color: Theme.well }
             Label {
                 x: 18; anchors.verticalCenter: parent.verticalCenter
                 visible: picker.chosenKeys.length === 0
@@ -93,7 +94,7 @@ ModalSheet {
                         onClicked: picker.choose(modelData)
                         scale: pressed ? 0.94 : 1
                         Behavior on scale { SpringAnimation { spring: 5; damping: 0.3; epsilon: 0.001 } }
-                        background: Rectangle { radius: 11; color: Theme.ink }
+                        background: Rectangle { radius: Theme.isGlass ? 11 : 8; color: Theme.accent }
                         contentItem: Item {
                             Label { id: draftText; x: 12; anchors.verticalCenter: parent.verticalCenter; text: picker.engine.keyName(draftChip.modelData); color: "#ffffff"; font.pixelSize: 13; font.weight: Font.DemiBold }
                             Icon { anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; name: "x"; size: 12; color: Qt.rgba(1, 1, 1, 0.7) }
@@ -127,17 +128,25 @@ ModalSheet {
                     focusPolicy: Qt.StrongFocus
                     Accessible.name: modelData.t
                     onClicked: picker.choose(modelData.v)
+                    // Glass: translucent caps with a bright rim. Solid: iOS keyboard caps with a base shadow.
                     background: Rectangle {
                         anchors.fill: parent
                         anchors.margins: 2.5
-                        radius: 8
+                        radius: Theme.isGlass ? 9 : 6
                         scale: keycap.held ? 0.93 : 1
                         Behavior on scale { SpringAnimation { spring: 6; damping: 0.3; epsilon: 0.001 } }
-                        color: keycap.held ? Theme.focusRing : keycap.selected ? Theme.ink
-                             : keycap.hovered && keycap.enabled ? Theme.white : keycap.enabled ? Qt.rgba(1, 1, 1, 0.55 + 0.45 * (1 - Theme.glass)) : Theme.well
+                        color: keycap.held ? Theme.focusRing : keycap.selected ? Theme.accent
+                             : keycap.hovered && keycap.enabled ? Theme.white
+                             : keycap.enabled ? (Theme.isGlass ? Qt.rgba(1, 1, 1, 0.5) : "#ffffff") : Theme.well
                         Behavior on color { ColorAnimation { duration: 90 } }
-                        border.width: keycap.visualFocus ? 2 : 1
-                        border.color: keycap.visualFocus ? Theme.focusRing : Qt.rgba(0, 0, 0, 0.07)
+                        border.width: keycap.visualFocus ? 2 : Theme.isGlass ? 1 : 0
+                        border.color: keycap.visualFocus ? Theme.focusRing : Qt.rgba(1, 1, 1, 0.9)
+                        Rectangle {
+                            visible: !Theme.isGlass && keycap.enabled
+                            anchors.fill: parent; anchors.bottomMargin: -1.5
+                            radius: parent.radius; z: -1
+                            color: Qt.rgba(0, 0, 0, 0.22)
+                        }
                         Rectangle {
                             visible: keycap.modelData.v === 144
                             width: 6; height: 3; radius: 1.5
@@ -172,7 +181,7 @@ ModalSheet {
             id: footer
             y: draftError.y + 26
             width: parent.width; height: 44
-            GlassButton {
+            AppButton {
                 kind: "plain"
                 iconName: "reset"
                 text: I18n.t("sheet.default")
@@ -181,8 +190,8 @@ ModalSheet {
             Row {
                 anchors.right: parent.right
                 spacing: 10
-                GlassButton { objectName: "cancelKeyboard"; text: I18n.t("cancel"); onClicked: picker.close() }
-                GlassButton {
+                AppButton { objectName: "cancelKeyboard"; text: I18n.t("cancel"); onClicked: picker.close() }
+                AppButton {
                     objectName: "applyKeyboard"
                     kind: "primary"
                     iconName: "check"

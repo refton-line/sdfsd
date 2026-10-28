@@ -9,8 +9,8 @@ Window {
     property var engine
     property bool wanted: false
     property alias island: island
-    width: 460
-    height: 120
+    width: 520
+    height: 220
     color: "transparent"
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus | Qt.NoDropShadowWindowHint
     visible: false

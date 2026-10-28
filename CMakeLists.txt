@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
-project(CClicker VERSION 0.5.0 LANGUAGES CXX)
+project(CClicker VERSION 0.6.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 Concurrent)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 Concurrent ShaderTools)
 qt_standard_project_setup(REQUIRES 6.8)
 if(MSVC)
  add_compile_options(/utf-8)
@@ -30,6 +30,8 @@ qt_add_qml_module(CClicker URI CClicker VERSION 1.0
  QML_FILES qml/Main.qml qml/Theme.qml qml/I18n.qml ${APP_QML}
  RESOURCES ${APP_ASSETS})
 target_link_libraries(CClicker PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Concurrent)
+# Liquid Glass refraction and the material-switch wave; compiled to SPIR-V/GLSL/HLSL/MSL at build time.
+qt_add_shaders(CClicker "app_shaders" PREFIX "/" FILES shaders/glass.frag shaders/reveal.frag)
 if(MSVC)
  target_compile_options(CClicker PRIVATE /W4 /utf-8 /permissive-)
 else()

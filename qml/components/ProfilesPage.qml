@@ -21,31 +21,30 @@ Item {
             id: query
             objectName: "configSearch"
             width: parent.width - importButton.width - folderButton.width - saveButton.width - 30
-            height: 44
             iconName: "search"
             placeholderText: I18n.t("profiles.search")
             onTextEdited: page.store.searchQuery = text
         }
-        GlassButton {
+        AppButton {
             id: importButton
             objectName: "importConfig"
-            width: 44; height: 44
+            width: query.height; height: query.height
             iconName: "importTray"
             Accessible.name: I18n.t("profiles.import")
             onClicked: importDialog.open()
         }
-        GlassButton {
+        AppButton {
             id: folderButton
             objectName: "openConfigFolder"
-            width: 44; height: 44
+            width: query.height; height: query.height
             iconName: "folder"
             Accessible.name: I18n.t("profiles.folder")
             onClicked: page.store.openFolder()
         }
-        GlassButton {
+        AppButton {
             id: saveButton
             objectName: "saveConfig"
-            height: 44
+            height: query.height
             kind: "primary"
             iconName: "plus"
             text: I18n.t("profiles.save")
@@ -53,18 +52,19 @@ Item {
         }
     }
 
-    Glass {
+    Card {
         id: listCard
-        y: toolbar.height + Theme.gutter
+        title: Theme.isGlass ? "" : I18n.t("nav.profiles")
+        y: toolbar.height + Theme.gap
         width: parent.width
         height: parent.height - y
         ListView {
             id: list
             objectName: "configList"
             anchors.fill: parent
-            anchors.margins: 10
+            anchors.margins: Theme.isGlass ? 10 : 0
             clip: true
-            spacing: 4
+            spacing: Theme.isGlass ? 4 : 0
             model: page.store.profiles
             boundsBehavior: Flickable.StopAtBounds
             add: Transition {
@@ -81,7 +81,7 @@ Item {
                 required property int index
                 objectName: "profile_" + modelData.id
                 width: list.width
-                height: 66
+                height: Theme.isGlass ? 66 : 60
                 hoverEnabled: true
                 focusPolicy: Qt.StrongFocus
                 Accessible.name: modelData.name
@@ -98,17 +98,24 @@ Item {
                     NumberAnimation { target: row; property: "opacity"; to: 1; duration: 260; easing.type: Easing.OutCubic }
                 }
                 background: Rectangle {
-                    radius: 18
-                    color: row.selected ? Qt.rgba(1, 1, 1, 0.8) : row.hovered ? Qt.rgba(1, 1, 1, 0.45) : "transparent"
+                    radius: Theme.isGlass ? 18 : row.index === 0 || row.index === list.count - 1 ? 10 : 0
+                    color: Theme.isGlass ? (row.selected ? Qt.rgba(1, 1, 1, 0.8) : row.hovered ? Qt.rgba(1, 1, 1, 0.45) : "transparent")
+                                         : row.selected ? "#d1d1d6" : row.hovered ? "#f2f2f7" : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.fast } }
-                    border.width: row.visualFocus ? 2 : row.selected ? 1 : 0
+                    border.width: row.visualFocus ? 2 : Theme.isGlass && row.selected ? 1 : 0
                     border.color: row.visualFocus ? Theme.focusRing : Theme.hairline
+                    Rectangle {
+                        visible: !Theme.isGlass && row.index < list.count - 1
+                        x: 70; anchors.bottom: parent.bottom
+                        width: parent.width - x; height: 1
+                        color: Theme.separator
+                    }
                 }
                 contentItem: Item {
                     Rectangle {
                         id: tile
                         x: 10; anchors.verticalCenter: parent.verticalCenter
-                        width: 42; height: 42; radius: 13
+                        width: Theme.isGlass ? 42 : 36; height: width; radius: Theme.isGlass ? 13 : 8
                         color: !row.modelData.valid ? Theme.well : Theme.modeColor(row.modelData.mode === "blatant" ? 1 : 0)
                         Icon {
                             anchors.centerIn: parent
@@ -170,12 +177,12 @@ Item {
                                 { icon: "exportTray", tip: "profiles.export", name: "exportConfig" },
                                 { icon: "trash", tip: "profiles.delete", name: "deleteConfig" }
                             ]
-                            GlassButton {
+                            AppButton {
                                 required property var modelData
                                 required property int index
                                 objectName: modelData.name
                                 width: 34; height: 34
-                                kind: index === 0 ? "primary" : "glass"
+                                kind: index === 0 ? "primary" : index === 4 && !Theme.isGlass ? "danger" : "normal"
                                 iconName: modelData.icon; iconSize: 16
                                 Accessible.name: I18n.t(modelData.tip)
                                 enabled: index !== 0 || !page.engine.active
@@ -193,7 +200,7 @@ Item {
                             }
                         }
                     }
-                    GlassButton {
+                    AppButton {
                         visible: !row.modelData.valid && (row.hovered || row.selected)
                         anchors.right: parent.right; anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
@@ -213,7 +220,7 @@ Item {
             Behavior on opacity { NumberAnimation { duration: Theme.slow } }
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: 64; height: 64; radius: 20
+                width: 64; height: 64; radius: Theme.isGlass ? 20 : 14
                 color: Theme.well
                 Icon { anchors.centerIn: parent; name: page.store.searchQuery !== "" ? "search" : "stack"; size: 30; color: Theme.muted }
             }
@@ -255,7 +262,7 @@ Item {
             TextBox {
                 id: nameField
                 objectName: "profileNameField"
-                width: parent.width; height: 46
+                width: parent.width
                 maximumLength: 64
                 placeholderText: I18n.t("profiles.name")
                 Accessible.name: I18n.t("profiles.name")
@@ -264,8 +271,8 @@ Item {
             Row {
                 anchors.right: parent.right
                 spacing: 10
-                GlassButton { text: I18n.t("cancel"); onClicked: nameDialog.close() }
-                GlassButton {
+                AppButton { text: I18n.t("cancel"); onClicked: nameDialog.close() }
+                AppButton {
                     id: confirmName
                     objectName: "confirmSaveConfig"
                     kind: "primary"
@@ -286,7 +293,7 @@ Item {
         contentItem: Column {
             spacing: 16
             Rectangle {
-                width: 48; height: 48; radius: 16
+                width: 48; height: 48; radius: Theme.isGlass ? 16 : 12
                 color: Qt.rgba(1, 0.231, 0.188, 0.12)
                 Icon { anchors.centerIn: parent; name: "trash"; size: 24; color: Theme.danger }
             }
@@ -295,11 +302,10 @@ Item {
             Row {
                 anchors.right: parent.right
                 spacing: 10
-                GlassButton { text: I18n.t("cancel"); onClicked: deleteDialog.close() }
-                GlassButton {
+                AppButton { text: I18n.t("cancel"); onClicked: deleteDialog.close() }
+                AppButton {
                     objectName: "confirmDeleteConfig"
-                    kind: "tinted"
-                    tintColor: Theme.danger
+                    kind: "danger"
                     iconName: "trash"
                     text: I18n.t("profiles.delete")
                     onClicked: if (page.store.remove(page.selectedId)) { page.selectedId = ""; deleteDialog.close(); }

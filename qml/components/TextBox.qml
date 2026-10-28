@@ -5,31 +5,44 @@ import CClicker
 T.TextField {
     id: field
     property string iconName
-    implicitHeight: 40
+    implicitHeight: Theme.isGlass ? 42 : 36
     implicitWidth: 240
-    leftPadding: iconName ? 40 : 16
-    rightPadding: 16
+    leftPadding: iconName ? (Theme.isGlass ? 42 : 32) : 14
+    rightPadding: 14
     verticalAlignment: TextInput.AlignVCenter
     color: Theme.ink
     font.family: Theme.sans
-    font.pixelSize: Theme.body
+    font.pixelSize: Theme.isGlass ? 14 : 15
     selectionColor: Theme.focusRing
     selectedTextColor: "#ffffff"
-    placeholderTextColor: Theme.faint
+    placeholderTextColor: Theme.isGlass ? Theme.muted : "#8e8e93"
     selectByMouse: true
     background: Item {
+        Surface {
+            anchors.fill: parent
+            visible: Theme.isGlass
+            radius: height / 2
+            elevation: 0.4
+            tintAlpha: field.activeFocus ? 0.75 : 0.5
+        }
         Rectangle {
             anchors.fill: parent
-            radius: height / 2
-            color: Theme.well
+            visible: !Theme.isGlass
+            radius: 10
+            color: Theme.fill
+        }
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -2
+            radius: Theme.isGlass ? height / 2 : 12
+            color: "transparent"
             border.width: field.activeFocus ? 2 : 0
-            border.color: Qt.rgba(0, 0.443, 0.89, 0.55)
-            Behavior on border.width { NumberAnimation { duration: Theme.fast } }
+            border.color: Qt.rgba(0, 0.443, 0.89, 0.5)
         }
         Icon {
             visible: field.iconName !== ""
-            x: 14; anchors.verticalCenter: parent.verticalCenter
-            name: field.iconName; size: 17
+            x: Theme.isGlass ? 16 : 9; anchors.verticalCenter: parent.verticalCenter
+            name: field.iconName; size: Theme.isGlass ? 17 : 16
             color: Theme.muted
         }
         Label {

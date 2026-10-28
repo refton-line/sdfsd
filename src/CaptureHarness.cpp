@@ -33,6 +33,8 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
     struct Step { int at; std::function<void()> run; };
     auto steps = std::make_shared<std::vector<Step>>();
     auto shot = [win, output](const QString &name) {
+        if (!win->isVisible() || !win->isExposed())
+            return;
         if (!win->grabWindow().save(output + "/" + name + ".png"))
             qFatal("capture failed: %s", qPrintable(name));
     };
@@ -43,41 +45,51 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
     auto add = [steps](int at, std::function<void()> run) { steps->push_back({at, std::move(run)}); };
 
     engine->enableForCapture();
+    auto island = [win](bool pinned) {
+        if (auto *item = findObject(win, "island"))
+            item->setProperty("pinned", pinned);
+    };
+    auto popup = [win](const char *name, const char *method) {
+        if (auto *object = findObject(win, name))
+            QMetaObject::invokeMethod(object, method);
+    };
+    auto material = [=](const QString &value, int x, int y, const QString &midShot) {
+        QMetaObject::invokeMethod(win, "setMaterial", Q_ARG(QVariant, value), Q_ARG(QVariant, x), Q_ARG(QVariant, y));
+        // Real-time, not paced: catch the wave halfway.
+        if (!midShot.isEmpty())
+            for (int ms : {350, 650, 950})
+                QTimer::singleShot(ms, win, [=] { shot(midShot + "-" + QString::number(ms)); });
+    };
     add(260, [=] { shot("01-boot"); });
     add(1350, [=] { shot("02-launch"); });
-    add(2600, [=] { shot("03-clicker-legit"); });
-    add(2700, [=] { engine->setMode(1); });
-    add(3050, [=] { shot("04-island-mode-notice"); });
-    add(4800, [=] { shot("05-clicker-blatant"); });
-    add(4900, [=] { engine->setCps(2500); });
-    add(5700, [=] { shot("06-custom-cps"); });
-    add(5800, [=] { engine->presentForCapture("arming", 0, -1, 3); });
-    add(6500, [=] { shot("07-arming"); });
-    add(6600, [=] { engine->presentForCapture("running", 18420, 2493.7, 0); });
-    for (int i = 0; i < 24; ++i)
-        add(6700 + i * 100, [=] { engine->presentForCapture("running", 18420 + i * 250, 2440 + (i * 37 % 110), 0); });
-    add(9300, [=] { shot("08-running"); });
-    add(9400, [=] {
-        if (auto *island = findObject(win, "island"))
-            island->setProperty("pinned", true);
-    });
-    add(10200, [=] { shot("09-island-expanded"); });
-    add(10300, [=] { engine->presentForCapture("idle", 24420, 2488.2, 0); });
-    add(11000, [=] { shot("10-island-summary"); });
-    add(13600, [=] { engine->presentForCapture("idle", 24420, 2488.2, 0, "focusLost"); });
-    add(14200, [=] { shot("11-error"); });
-    add(14300, [=] { engine->dismissError(); page(1); });
-    add(15200, [=] { shot("12-hotkeys"); });
-    add(15300, [=] {
+    add(2600, [=] { shot("03-glass-clicker"); });
+    add(2700, [=] { island(true); });
+    add(3500, [=] { shot("04-glass-island-expanded"); });
+    add(3600, [=] { island(false); engine->setMode(1); });
+    add(3950, [=] { shot("05-island-notice"); });
+    add(5400, [=] { engine->setCps(2500); });
+    add(6200, [=] { shot("06-glass-blatant"); });
+    add(6300, [=] { engine->presentForCapture("arming", 0, -1, 3); });
+    add(7300, [=] { shot("07-arming"); });
+    add(7400, [=] { engine->presentForCapture("running", 18420, 2493.7, 0); });
+    for (int i = 0; i < 20; ++i)
+        add(7500 + i * 100, [=] { engine->presentForCapture("running", 18420 + i * 250, 2440 + (i * 37 % 110), 0); });
+    add(9600, [=] { shot("08-running"); });
+    add(9700, [=] { island(true); });
+    add(10500, [=] { shot("09-island-expanded-running"); });
+    add(10600, [=] { island(false); engine->presentForCapture("idle", 24420, 2488.2, 0); });
+    add(11300, [=] { shot("10-island-summary"); });
+    add(13800, [=] { engine->presentForCapture("idle", 24420, 2488.2, 0, "focusLost"); });
+    add(14400, [=] { shot("11-error"); });
+    add(14500, [=] { engine->dismissError(); page(1); });
+    add(15400, [=] { shot("12-glass-hotkeys"); });
+    add(15500, [=] {
         if (auto *picker = findObject(win, "keyboardPicker"))
             QMetaObject::invokeMethod(picker, "edit", Q_ARG(QVariant, 0), Q_ARG(QVariant, 0));
     });
-    add(16300, [=] { shot("13-keyboard"); });
-    add(16400, [=] {
-        if (auto *picker = findObject(win, "keyboardPicker"))
-            QMetaObject::invokeMethod(picker, "close");
-    });
-    add(16900, [=] {
+    add(16500, [=] { shot("13-glass-keyboard"); });
+    add(16600, [=] { popup("keyboardPicker", "close"); });
+    add(17100, [=] {
         engine->setMode(0);
         engine->setCps(12);
         configs->saveNew("Bedwars legit");
@@ -88,37 +100,52 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
         configs->saveNew("Blatant 20");
         page(2);
     });
-    add(18000, [=] { shot("14-profiles"); });
-    add(18100, [=] { page(3); });
-    add(19000, [=] { shot("15-appearance"); });
-    add(19100, [=] { call("setMaterial", "solid"); });
-    add(20200, [=] { shot("16-appearance-solid"); });
-    add(20300, [=] { page(0); });
-    add(21200, [=] { shot("17-clicker-solid"); });
-    add(21300, [=] { call("setMaterial", "glass"); page(4); });
-    add(22300, [=] { call("setLanguage", "ru"); });
-    add(23300, [=] { shot("18-language-ru"); });
-    add(23400, [=] { page(0); });
-    add(23520, [=] { shot("19-page-transition"); });
-    add(24400, [=] { shot("20-clicker-ru"); });
-    add(24500, [=] { page(1); });
-    add(25400, [=] { shot("21-hotkeys-ru"); });
-    add(25500, [=] {
+    add(18300, [=] { shot("14-glass-profiles"); });
+    add(18400, [=] { page(3); });
+    add(19300, [=] { shot("15-glass-appearance"); });
+    add(19400, [=] { material("solid", 700, 260, "16-material-switch"); });
+    add(21000, [=] { shot("17-solid-appearance"); });
+    add(21100, [=] { page(0); });
+    add(22000, [=] { shot("18-solid-clicker"); });
+    add(22100, [=] { island(true); });
+    add(22900, [=] { shot("19-solid-island-expanded"); });
+    add(23000, [=] { island(false); page(1); });
+    add(23900, [=] { shot("20-solid-hotkeys"); });
+    add(24000, [=] {
+        if (auto *picker = findObject(win, "keyboardPicker"))
+            QMetaObject::invokeMethod(picker, "edit", Q_ARG(QVariant, 1), Q_ARG(QVariant, 0));
+    });
+    add(25000, [=] { shot("21-solid-keyboard"); });
+    add(25100, [=] { popup("keyboardPicker", "close"); page(2); });
+    add(26000, [=] { shot("22-solid-profiles"); });
+    add(26100, [=] { popup("configNameDialog", "open"); });
+    add(27000, [=] { shot("23-solid-sheet"); });
+    add(27100, [=] { popup("configNameDialog", "close"); page(4); });
+    add(28000, [=] { call("setLanguage", "ru"); });
+    add(29000, [=] { shot("24-solid-language-ru"); });
+    add(29100, [=] { page(0); });
+    add(29250, [=] { shot("25-solid-page-transition"); });
+    add(30100, [=] { shot("26-solid-clicker-ru"); });
+    add(30200, [=] { material("glass", 540, 360, "27-material-switch-back"); });
+    add(31800, [=] { shot("28-glass-clicker-ru"); });
+    add(31900, [=] { page(1); });
+    add(32800, [=] { shot("29-glass-hotkeys-ru"); });
+    add(32900, [=] {
         if (auto *overlay = win->findChild<QQuickWindow *>()) {
             engine->presentForCapture("running", 3120, 14.6, 0);
             overlay->setProperty("wanted", true);
         }
     });
-    add(26600, [=] {
+    add(34000, [=] {
         if (auto *overlay = win->findChild<QQuickWindow *>())
-            overlay->grabWindow().save(output + "/22-overlay-island.png");
+            overlay->grabWindow().save(output + "/30-overlay-island.png");
     });
-    add(26700, [=] {
+    add(34100, [=] {
         engine->presentForCapture("idle", 3120, 14.6, 0);
         call("setLanguage", "en");
     });
-    add(27700, [=] { win->close(); });
-    add(27900, [=] { shot("23-closing"); });
+    add(35100, [=] { win->close(); });
+    add(35160, [=] { shot("31-closing"); });
 
     // Relative scheduling: a slow grab on software GL must not bunch later steps together.
     const int pace = qEnvironmentVariableIntValue("CAPTURE_PACE") > 0 ? qEnvironmentVariableIntValue("CAPTURE_PACE") : 1;

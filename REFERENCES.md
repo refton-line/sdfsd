@@ -1,4 +1,4 @@
-# References — 0.5.0
+# References — 0.6.0
 
 ## Used
 | Source | What was taken |
@@ -9,11 +9,11 @@
 | [WWDC25 · Meet Liquid Glass](https://developer.apple.com/videos/play/wwdc2025/219/) | Optical properties: specular rims, adaptive shadows, fluid morphing between states |
 | [Apple HIG · Live Activities](https://developer.apple.com/design/human-interface-guidelines/live-activities) and [WWDC23 · Design dynamic Live Activities](https://developer.apple.com/videos/play/wwdc2023/10194/) | Dynamic Island presentations (compact, expanded, transient alerts) and glanceable live data |
 | [Inter](https://rsms.me/inter/) 4.1 (OFL) | Bundled UI typeface |
+| iOS 14 / iPadOS 14 system UI (inset grouped lists, sidebar, segmented control, switch, stepper) | The whole *Solid* material: structure, metrics and motion |
+| [Qt 6 ShaderEffect](https://doc.qt.io/qt-6/qml-qtquick-shadereffect.html) and `qt_add_shaders` | Shader conventions used for real-time refraction on every graphics backend |
 
 ## Considered, not used
-- **iOS 14 widgets and cards.** This is the reference for the *Solid* material only: opaque white on `#f2f2f7`.
 - **Raycast, Linear, Spectra** (0.4.x references). These are dark, dense tool aesthetics, so they were dropped because the brief asks for grey-white glass.
-- **Real refraction shader.** Lensing the background at glass edges would need custom shaders compiled for every graphics API. The rim gradient, sheen and blur give the same impression at a fraction of the risk.
-- **System acrylic / Mica.** Windows backdrop materials do not compose reliably with Direct3D flip-model swap chains in a frameless window. The glass is rendered inside the window.
+- **Desktop see-through (Windows acrylic/Mica behind the window).** Rejected: it cannot be verified here and is unreliable with Direct3D flip-model swap chains in a frameless window. The glass refracts the app's own animated backdrop instead.
 
 No third-party artwork is bundled.

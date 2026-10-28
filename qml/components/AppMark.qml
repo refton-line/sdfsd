@@ -9,18 +9,19 @@ Item {
     property real draw: 1      // 0..1 stroke reveal, used by the launch sequence
     implicitWidth: size
     implicitHeight: size
-    Glass {
+    Surface {
         anchors.fill: parent
         radius: mark.size * 0.3
-        elevation: mark.size > 40 ? 1 : 0
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            gradient: Gradient {
-                GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.6) }
-                GradientStop { position: 1; color: Qt.rgba(0.85, 0.86, 0.9, 0.6) }
-            }
-        }
+        elevation: 0
+        tintAlpha: 0.75
+        solidColor: "#ffffff"
+    }
+    Rectangle {
+        anchors.fill: parent
+        radius: mark.size * 0.3
+        color: "transparent"
+        border.width: Theme.isGlass ? 0 : 0.5
+        border.color: "#c6c6c8"
     }
     Shape {
         anchors.centerIn: parent
