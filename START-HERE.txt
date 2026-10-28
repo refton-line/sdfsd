@@ -1,0 +1,13 @@
+C clicker 0.5.0
+
+EN  Extract the WHOLE archive into a new folder and run CClicker.exe (DLLs, plugins and qml are required).
+    F6 starts, F8 stops. During the countdown, switch to the target window and keep the cursor inside it.
+    Legit = human-like rhythm. Blatant = direct, exact, uncapped rate. Click the big number to type any CPS.
+    Language and material (Liquid Glass / Solid) are in the sidebar. The EXE is unsigned.
+    CClickerReceiver.exe counts the clicks it receives, so you can check the real rate.
+
+RU  Распакуйте ВЕСЬ архив в новую папку и запустите CClicker.exe (DLL, plugins и qml обязательны).
+    F6 запуск, F8 остановка. Во время отсчёта перейдите в нужное окно и держите курсор внутри него.
+    Легит = ритм человека. Блатант = напрямую, точно, без лимита CPS. Нажмите на большое число, чтобы ввести своё значение.
+    Язык и материал (Жидкое стекло / Без прозрачности) переключаются в боковой панели. EXE не подписан.
+    CClickerReceiver.exe считает полученные клики, так можно проверить реальный CPS.
