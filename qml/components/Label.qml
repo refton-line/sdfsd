@@ -1,5 +1,5 @@
 import QtQuick
-import CClicker
+import LightClicker
 
 Text {
     color: Theme.ink

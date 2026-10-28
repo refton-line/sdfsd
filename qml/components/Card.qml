@@ -1,5 +1,5 @@
 import QtQuick
-import CClicker
+import LightClicker
 
 // Section container. Glass: a floating glass panel with an inline title. Solid: an iOS 14
 // inset grouped section with an uppercase header above a white rounded group.

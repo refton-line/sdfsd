@@ -67,7 +67,8 @@ bool ConfigStore::read(const QString &path, QJsonObject &doc, ClickConfig &cfg,
     if (doc.size() != 4 ||
         !((doc["format"] == "obsidian-click" && doc["version"].toDouble() == 1) ||
           (doc["format"] == "c-clicker" && (doc["version"].toDouble() == 2 || doc["version"].toDouble() == 3 ||
-                                            doc["version"].toDouble() == 4))) ||
+                                            doc["version"].toDouble() == 4)) ||
+          (doc["format"] == "light-clicker" && doc["version"].toDouble() == 4)) ||
         !doc["version"].isDouble() || !doc["name"].isString() ||
         !validName(doc["name"].toString()) || !doc["settings"].isObject()) {
         error = "schema";
@@ -123,7 +124,7 @@ bool ConfigStore::saveNew(const QString &name) {
         return finish(false, "badName");
     const auto id = QUuid::createUuid().toString(QUuid::WithoutBraces) + ".json";
     const auto settings = Configuration::encode(m_engine->config());
-    if (!write(safePath(id), {{"format", "c-clicker"},
+    if (!write(safePath(id), {{"format", "light-clicker"},
                               {"version", 4},
                               {"name", name.trimmed()},
                               {"settings", settings}}))
@@ -141,7 +142,7 @@ bool ConfigStore::duplicate(const QString &id) {
     if (path.isEmpty() || !read(path, doc, cfg, error))
         return finish(false, "readFailed");
     doc["name"] = doc["name"].toString().left(57) + " (2)";
-    doc["format"] = "c-clicker";
+    doc["format"] = "light-clicker";
     doc["version"] = 4;
     doc["settings"] = Configuration::encode(cfg);
     const auto fresh = QUuid::createUuid().toString(QUuid::WithoutBraces) + ".json";
@@ -198,7 +199,7 @@ bool ConfigStore::importFile(const QUrl &url) {
     if (!read(url.toLocalFile(), doc, cfg, error))
         return finish(false, error);
     const auto id = QUuid::createUuid().toString(QUuid::WithoutBraces) + ".json";
-    doc["format"] = "c-clicker";
+    doc["format"] = "light-clicker";
     doc["version"] = 4;
     doc["settings"] = Configuration::encode(cfg);
     const bool ok = write(safePath(id), doc);

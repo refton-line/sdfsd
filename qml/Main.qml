@@ -3,14 +3,14 @@ import QtQuick.Controls
 import QtQuick.Window
 import QtQuick.Effects
 import QtCore
-import CClicker
+import LightClicker
 import "components"
 
 ApplicationWindow {
     id: win
     objectName: "mainWindow"
     visible: true
-    title: "C clicker"
+    title: "Light clicker"
     readonly property real fit: Math.min(1, (Screen.desktopAvailableWidth - 48) / Theme.baseWidth, (Screen.desktopAvailableHeight - 48) / Theme.baseHeight)
     width: uiCapture ? Theme.baseWidth : Math.round(Theme.baseWidth * fit)
     height: uiCapture ? Theme.baseHeight : Math.round(Theme.baseHeight * fit)
@@ -28,6 +28,7 @@ ApplicationWindow {
     }
 
     property real reveal: 0           // 0 → 1 on launch, back to 0 on close
+    property real brandFly: 0         // the loading mark flying from the centre to its place
     property bool launched: false
     property bool minimumElapsed: false
     property bool exiting: false
@@ -106,7 +107,13 @@ ApplicationWindow {
 
     SequentialAnimation {
         id: launchAnimation
-        NumberAnimation { target: win; property: "reveal"; to: 1; duration: 1100; easing.type: Easing.OutCubic }
+        ParallelAnimation {
+            NumberAnimation { target: win; property: "brandFly"; to: 1; duration: 820; easing.type: Easing.InOutCubic }
+            SequentialAnimation {
+                PauseAnimation { duration: 180 }
+                NumberAnimation { target: win; property: "reveal"; to: 1; duration: 1100; easing.type: Easing.OutCubic }
+            }
+        }
         ScriptAction { script: clickEngine.setReady(true) }
     }
     SequentialAnimation {
@@ -254,6 +261,7 @@ ApplicationWindow {
 
         // Navigation: a floating glass tab bar, or an iOS 14 sidebar.
         ClassicSidebar {
+            id: sidebar
             visible: !Theme.isGlass
             readonly property real local: Math.max(0, Math.min(1, (win.reveal - 0.12) / 0.55))
             x: -40 * (1 - local)
@@ -287,14 +295,6 @@ ApplicationWindow {
                 acceptedButtons: Qt.LeftButton
                 onPressed: win.startSystemMove()
                 onDoubleClicked: win.toggleMaximized()
-            }
-            Row {
-                visible: Theme.isGlass
-                x: 22; anchors.verticalCenter: parent.verticalCenter
-                spacing: 10
-                opacity: Math.max(0, Math.min(1, (win.reveal - 0.35) / 0.4))
-                AppMark { size: 28; draw: Math.max(0, Math.min(1, (win.reveal - 0.3) / 0.5)); anchors.verticalCenter: parent.verticalCenter }
-                Label { text: I18n.t("app"); font.pixelSize: 14; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
             }
             Row {
                 anchors.right: parent.right; anchors.rightMargin: 14
@@ -336,12 +336,28 @@ ApplicationWindow {
             objectName: "island"
             engine: clickEngine
             booting: true
-            bootProgress: bootRing.value
             visible: startup.error === ""
             x: (parent.width - width) / 2
-            property real rise: win.launched ? 1 : 0
-            Behavior on rise { SpringAnimation { spring: 2.6; damping: 0.3; epsilon: 0.001 } }
-            y: (win.height / 2 - 21) * (1 - rise) + 11 * rise
+            y: 11
+        }
+
+        // Launch: the split star loads in the middle (rays light with startup progress), then flies
+        // into the title bar (glass) or the sidebar (solid) and stays there as the logo.
+        AppMark {
+            id: brand
+            objectName: "brand"
+            visible: startup.error === ""
+            readonly property real fly: win.brandFly
+            readonly property real homeSize: Theme.isGlass ? 34 : 44
+            readonly property real homeX: Theme.isGlass ? 22 : 24 + sidebar.x
+            readonly property real homeY: Theme.isGlass ? (Theme.titleBar - homeSize) / 2 : 44
+            size: 128 + (homeSize - 128) * fly
+            x: (win.width - size) / 2 + (homeX - (win.width - size) / 2) * fly
+            y: (win.height - size) / 2 + (homeY - (win.height - size) / 2) * fly
+            progress: bootRing.value
+            live: !win.launched || brandHover.hovered
+            opacity: stage.opacity
+            HoverHandler { id: brandHover }
             QtObject {
                 id: bootRing
                 property real value: startup.progress / 100

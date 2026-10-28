@@ -1,4 +1,4 @@
-# References — 0.6.0
+# References — 0.7.0
 
 ## Used
 | Source | What was taken |

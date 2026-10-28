@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import CClicker
+import LightClicker
 import "Icons.js" as Icons
 
 // Vector icon tinted at runtime; strokes stay crisp at any size.

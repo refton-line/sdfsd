@@ -1,4 +1,4 @@
-# C clicker 0.6 — design
+# Light clicker 0.7 — design
 
 A new design written from scratch. Nothing from the 0.4.x red/black look is reused. 0.6 turns the two materials into two complete design languages.
 
@@ -33,7 +33,8 @@ bright liquid band that bends the old image outward as it passes.
 
 ### Liquid Glass
 - **Real refraction.** `GlassSurface.qml` runs `shaders/glass.frag`. It computes a rounded-rectangle SDF, bends the backdrop inward across a curved bezel (refraction grows quadratically towards the rim), mixes sharp and frosted samples, splits RGB slightly at the edge, and adds a lit bezel, a two-sided specular rim and far-side shade.
-- **Backdrop.** `Main.qml` keeps four live textures: the wallpaper, a frosted copy of it, the whole stage (wallpaper and pages), and a frosted copy of the stage. Cards sample the wallpaper. Floating glass (tab bar, its lens, sheets) samples the stage, so content behind them refracts too. Each surface follows its on-screen position every frame while anything moves.
+- **Everything is glass.** `Fill.qml` replaces every filled rectangle. On solid it is that rectangle; on glass it is a `GlassSurface` tinted with the same colour: opaque colours become strongly tinted glass (Start button, selected chip, mode and hotkey badges, key caps, island), faint fills become recessed `inset` glass lit from below (segmented tracks, stepper tracks, wells). Only text, hairlines, status dots and the waveform are not glass.
+- **Backdrop.** `Main.qml` keeps four live textures: the wallpaper, a frosted copy of it, the whole stage (wallpaper and pages), and a frosted copy of the stage. Cards sample the wallpaper. Floating glass (tab bar, its lens, sheets, the island and its controls) samples the stage, so content behind them refracts too. Glass in the overlay window has no backdrop (`detached`) and is drawn from its tint, a vertical sheen and the rim light. Each surface follows its on-screen position every frame while anything moves.
 - **Wallpaper.** A grey-white field with orbiting white and graphite masses and thin silver arcs. It gives the glass something visible to bend and frost.
 - **Navigation.** A floating tab bar. The selection is a clear lens whose stretch, swell and magnification follow its speed.
 - **Controls.** Glass capsules that squash on press. Switch knobs turn into a clear lens while held. Segmented lenses stretch towards their target.
@@ -41,7 +42,7 @@ bright liquid band that bends the old image outward as it passes.
 
 ### Solid (iOS 14)
 - Inset grouped sections: uppercase headers, white groups with radius 10 on `#f2f2f7`, 1 px separators, and grey icon tiles in the style of Settings.
-- iPadOS 14 sidebar: large title, blue line icons, filled `#007aff` selection.
+- iPadOS 14 sidebar: the logo, blue line icons, filled `#007aff` selection. No section headers above groups; rows say what they are.
 - iOS 14 controls: white segmented thumb with dividers, classic 51×31 switch, stepper pill, tinted buttons that dim on press.
 - Motion: eased with no overshoot. Pages slide horizontally like a push; sheets slide up over a 32% dim.
 
@@ -49,16 +50,16 @@ bright liquid band that bends the old image outward as it passes.
 - Springs (`SpringAnimation`) for spatial glass motion. Critically damped springs or ease-out curves for solid.
 - Outgoing content leaves quickly (110–150 ms). Incoming content arrives in 260–380 ms and starts at once, with no gap between the two.
 - Continuous effects (island waveform, countdown ring, pulse, tab-bar lens speed) are evaluated every frame from a running clock rather than as looping keyframes, so they never visibly stop or step.
-- Launch: the island appears as a dot with a progress ring at the window centre and springs up into the title bar. Navigation, content and controls follow in a stagger.
+- Launch: the split star loads at the window centre; its rays light one by one with startup progress. It then flies (820 ms, in-out cubic) into the title bar or the sidebar and becomes the logo. The island grows from a dot in the title bar, and navigation, content and controls follow in a stagger.
 - Close: input stops first. Content sinks and fades, the island collapses to a dot, then the window closes.
 
 ## Dynamic Island
-One black capsule (`DynamicIsland.qml`) on springs (`spring 3.3, damping 0.25`) with a
+One capsule (`DynamicIsland.qml`), smoked Liquid Glass on glass and black on solid, on springs (`spring 3.3, damping 0.25`) with a
 velocity-driven squash and stretch. Its content is drawn in a fixed-size layer and masked to the
 moving capsule, so nothing pokes out mid-morph and no textures are reallocated.
 
-- **Views:** boot, idle, arming, live, expanded, notice, error, summary.
-- **Expanded (hover or click):** Legit/Blatant switch, large CPS with −/+ (idle) or a live waveform (running), hotkey hints or clicks and time, and a 76 px Start/Cancel/Stop button with a continuous countdown ring.
+- **Views:** idle, arming, live, expanded, notice, error, summary (hidden while the app loads).
+- **Expanded (hover or click):** Legit/Blatant switch, large CPS with −/+ (idle) or a live waveform (running), clicks and time while running, and a 76 px Start/Cancel/Stop button with a continuous countdown ring.
 - **Priority:** hover-expansion beats notices and errors, so it responds at once and never queues behind them.
 - **Overlay:** the floating copy (`IslandOverlay.qml`) is input-transparent and never activates, so the clicker's foreground and cursor checks still see the target window.
 
@@ -66,8 +67,18 @@ moving capsule, so nothing pokes out mid-morph and no textures are reallocated.
 Vector paths (`qml/components/Icons.js`) rendered with Qt Quick Shapes, tinted at runtime. Every
 place has its own glyph: navigation (cursor, keyboard, stack, drop, globe), modes (hand, bolt),
 materials (sparkle, square), profile actions (check, pencil, duplicate, export, trash, import,
-folder), window chrome, and status (warning, check circle). The app icon is a glass squircle with an
-open "C" that ends in a click point.
+folder), window chrome, and status (warning, check circle).
+
+## Logo
+`shaders/mark.frag` draws the mark: a four-point sparkle (a concave superellipse, the vertical points
+a little longer) with eight rays set 22.5° off the axes, long and short alternating, so the split
+never runs along a ray. Left of the split it is Liquid Glass: it refracts the stage behind it and has
+a lit bezel, a two-sided rim, a soft halo and a glint that crosses it. Right of the split it is
+solid `#1d1d1f`. Below 60 px it switches to a simpler form (a fuller star, four diagonal rays and a
+graphite edge on the glass half) so it stays legible in the title bar. `AppMark.qml` wraps it;
+`progress` lights the rays during launch. The Windows icon (`assets/app.ico`, 16–256 px) and the
+window icon are rendered from the same shader by `scripts/render-icon.sh` and `tools/icon/RenderIcon.qml`,
+with a squircle tile split the same way (frosted glass | white). Sizes up to 32 px leave out the rays.
 
 ## Type
 Inter (OFL, bundled, Cyrillic coverage) stands in for SF Pro, which cannot be redistributed.

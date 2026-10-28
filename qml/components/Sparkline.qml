@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import CClicker
+import LightClicker
 
 // Recent measured rate. Samples arrive every 100 ms while running; the line keeps its last shape.
 Item {

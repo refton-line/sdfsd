@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
-// iPadOS 14-style sidebar: large title, blue line icons, a filled blue selection.
+// iPadOS 14-style sidebar: blue line icons, a filled blue selection.
 Rectangle {
     id: bar
     property int currentIndex: 0
@@ -12,16 +12,10 @@ Rectangle {
     color: "#ffffff"
     Rectangle { anchors.right: parent.right; width: 0.5; height: parent.height; color: "#c6c6c8" }
 
-    Row {
-        x: 20; y: 64
-        spacing: 10
-        opacity: bar.reveal
-        AppMark { size: 32; anchors.verticalCenter: parent.verticalCenter }
-        Label { text: I18n.t("app"); font.pixelSize: 26; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
-    }
+    // The logo sits above the list: Main.qml's launch mark lands here.
     Item {
         id: list
-        x: 10; y: 124
+        x: 10; y: 112
         width: parent.width - 20
         height: bar.items.length * 46
         Rectangle {

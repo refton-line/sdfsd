@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import CClicker
+import LightClicker
 
 // Glass: a grey-white field with slowly orbiting light and graphite masses and a few thin
 // silver arcs, enough structure for the glass to visibly bend and frost it.

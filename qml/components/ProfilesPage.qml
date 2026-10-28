@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 Item {
     id: page
@@ -54,7 +54,6 @@ Item {
 
     Card {
         id: listCard
-        title: Theme.isGlass ? "" : I18n.t("nav.profiles")
         y: toolbar.height + Theme.gap
         width: parent.width
         height: parent.height - y
@@ -112,9 +111,10 @@ Item {
                     }
                 }
                 contentItem: Item {
-                    Rectangle {
+                    Fill {
                         id: tile
                         x: 10; anchors.verticalCenter: parent.verticalCenter
+                        inset: !row.modelData.valid
                         width: Theme.isGlass ? 42 : 36; height: width; radius: Theme.isGlass ? 13 : 8
                         color: !row.modelData.valid ? Theme.well : Theme.modeColor(row.modelData.mode === "blatant" ? 1 : 0)
                         Icon {
@@ -138,7 +138,7 @@ Item {
                                 elide: Text.ElideRight
                                 font.pixelSize: Theme.headline; font.weight: Font.DemiBold
                             }
-                            Rectangle {
+                            Fill {
                                 id: activeBadge
                                 visible: row.modelData.active
                                 anchors.verticalCenter: parent.verticalCenter
@@ -152,7 +152,7 @@ Item {
                             width: parent.width
                             elide: Text.ElideRight
                             text: row.modelData.valid
-                                  ? I18n.t(row.modelData.mode === "blatant" ? "mode.blatant" : "mode.legit") + " · " + I18n.rate(row.modelData.cps) + " " + I18n.t("cps")
+                                  ? I18n.rate(row.modelData.cps) + " " + I18n.t("cps")
                                   : I18n.t("profiles.invalid") + " · " + I18n.msg(row.modelData.error)
                             color: row.modelData.valid ? Theme.muted : Theme.danger
                             font.pixelSize: Theme.small
@@ -218,9 +218,10 @@ Item {
             visible: page.store.profiles.length === 0
             opacity: visible ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.slow } }
-            Rectangle {
+            Fill {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: 64; height: 64; radius: Theme.isGlass ? 20 : 14
+                inset: true
                 color: Theme.well
                 Icon { anchors.centerIn: parent; name: page.store.searchQuery !== "" ? "search" : "stack"; size: 30; color: Theme.muted }
             }

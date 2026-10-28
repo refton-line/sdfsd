@@ -9,11 +9,10 @@ QtObject {
     readonly property var locale: Qt.locale(language === "ru" ? "ru_RU" : "en_US")
 
     readonly property var en: ({
-        "app": "C clicker",
+        "app": "Light clicker",
         "nav.clicker": "Clicker", "nav.hotkeys": "Hotkeys", "nav.profiles": "Profiles",
         "nav.appearance": "Appearance", "nav.language": "Language",
         "mode.legit": "Legit", "mode.blatant": "Blatant",
-        "mode.legit.sub": "Human rhythm", "mode.blatant.sub": "Direct, no emulation",
         "cps": "CPS", "cps.title": "Clicks per second", "cps.custom": "Custom",
         "button": "Button", "button.0": "Left", "button.1": "Right", "button.2": "Middle",
         "variance": "Variance", "variance.0": "Tight", "variance.1": "Natural", "variance.2": "Loose",
@@ -21,7 +20,7 @@ QtObject {
         "limits": "Stop after", "limit.time": "Time", "limit.clicks": "Clicks",
         "start": "Start", "stop": "Stop", "cancel": "Cancel",
         "state.idle": "Ready", "state.arming": "Starting", "state.running": "Running", "state.stopping": "Stopping",
-        "live.clicks": "Clicks", "live.time": "Time", "live.average": "Average", "live.target": "Target",
+        "live.clicks": "Clicks", "live.time": "Time", "live.average": "Average", 
         "keys.start": "Start", "keys.stop": "Stop", "keys.countdown": "Countdown", "keys.reset": "Reset",
         "keys.add": "Add shortcut", "keys.remove": "Remove shortcut",
         "sheet.single": "Single key", "sheet.combo": "Combination", "sheet.default": "Default",
@@ -35,12 +34,10 @@ QtObject {
         "profiles.deleteTitle": "Delete this profile?", "profiles.filter": "JSON profile (*.json)",
         "profiles.save.short": "Save",
         "look.material": "Material", "look.glass": "Liquid Glass", "look.solid": "Solid",
-        "look.glass.sub": "Refraction, floating bar · iOS 27", "look.solid.sub": "Opaque, sidebar · iOS 14",
         "look.island": "Island over other windows",
         "win.minimize": "Minimize", "win.maximize": "Maximize", "win.restore": "Restore", "win.close": "Close",
         "boot.failed": "Couldn't start", "boot.retry": "Retry", "dismiss": "Dismiss",
         "lang.en": "English", "lang.ru": "Russian",
-        "section.mode": "Mode", "section.options": "Options", "section.session": "Session", "section.island": "Dynamic Island",
 
         "msg.savedRejected": "Saved settings were rejected", "msg.keyboardUnavailable": "Keyboard input is unavailable",
         "msg.stopFirst": "Stop clicking before changing settings",
@@ -74,11 +71,10 @@ QtObject {
     })
 
     readonly property var ru: ({
-        "app": "C clicker",
+        "app": "Light clicker",
         "nav.clicker": "Кликер", "nav.hotkeys": "Клавиши", "nav.profiles": "Профили",
         "nav.appearance": "Оформление", "nav.language": "Язык",
         "mode.legit": "Легит", "mode.blatant": "Блатант",
-        "mode.legit.sub": "Ритм человека", "mode.blatant.sub": "Напрямую, без эмуляции",
         "cps": "CPS", "cps.title": "Кликов в секунду", "cps.custom": "Своё",
         "button": "Кнопка", "button.0": "Левая", "button.1": "Правая", "button.2": "Средняя",
         "variance": "Разброс", "variance.0": "Узкий", "variance.1": "Живой", "variance.2": "Широкий",
@@ -86,7 +82,7 @@ QtObject {
         "limits": "Остановить после", "limit.time": "Время", "limit.clicks": "Клики",
         "start": "Запустить", "stop": "Остановить", "cancel": "Отмена",
         "state.idle": "Готов", "state.arming": "Запуск", "state.running": "Работает", "state.stopping": "Остановка",
-        "live.clicks": "Клики", "live.time": "Время", "live.average": "Среднее", "live.target": "Цель",
+        "live.clicks": "Клики", "live.time": "Время", "live.average": "Среднее", 
         "keys.start": "Запуск", "keys.stop": "Остановка", "keys.countdown": "Отсчёт", "keys.reset": "Сбросить",
         "keys.add": "Добавить сочетание", "keys.remove": "Удалить сочетание",
         "sheet.single": "Одна клавиша", "sheet.combo": "Сочетание", "sheet.default": "По умолчанию",
@@ -100,12 +96,10 @@ QtObject {
         "profiles.deleteTitle": "Удалить профиль?", "profiles.filter": "Профиль JSON (*.json)",
         "profiles.save.short": "Сохранить",
         "look.material": "Материал", "look.glass": "Жидкое стекло", "look.solid": "Без прозрачности",
-        "look.glass.sub": "Преломление, плавающая панель · iOS 27", "look.solid.sub": "Непрозрачно, боковое меню · iOS 14",
         "look.island": "Остров поверх окон",
         "win.minimize": "Свернуть", "win.maximize": "Развернуть", "win.restore": "Восстановить", "win.close": "Закрыть",
         "boot.failed": "Не удалось запустить", "boot.retry": "Повторить", "dismiss": "Скрыть",
         "lang.en": "Английский", "lang.ru": "Русский",
-        "section.mode": "Режим", "section.options": "Параметры", "section.session": "Сессия", "section.island": "Динамический остров",
 
         "msg.savedRejected": "Сохранённые настройки отклонены", "msg.keyboardUnavailable": "Ввод с клавиатуры недоступен",
         "msg.stopFirst": "Остановите клики перед изменением настроек",

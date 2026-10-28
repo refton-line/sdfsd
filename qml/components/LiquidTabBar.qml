@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 // Floating Liquid Glass tab bar. The selection is a clear lens that magnifies what is behind
 // it, stretches with its speed and swells while it travels.

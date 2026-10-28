@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 // Glass: a glass lens springs between segments and stretches with its speed.
 // Solid: the iOS 13/14 control, a white thumb that eases across a grey track.
@@ -28,9 +28,10 @@ Item {
     }
     readonly property real travel: Math.min(cell * 0.4, Math.abs(target - lensX) * 0.5)
 
-    Rectangle {
+    Fill {
         anchors.fill: parent
         radius: Theme.isGlass ? height / 2 : 9
+        inset: true
         color: Theme.well
     }
     // Solid separators between unselected neighbours

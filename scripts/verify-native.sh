@@ -13,5 +13,5 @@ trap 'rm -rf "$profile"' EXIT
 # Glass blur and Shapes need a real OpenGL context; Xvfb + Mesa is enough.
 # CAPTURE_PACE=2 gives software GL time to render each step.
 XDG_CONFIG_HOME="$profile" CAPTURE_PACE="${CAPTURE_PACE:-2}" QT_QPA_PLATFORM=xcb \
-  xvfb-run -a -s "-screen 0 1600x1000x24" "$build/bin/CClicker" --capture "$build/qa-previews"
+  xvfb-run -a -s "-screen 0 1600x1000x24" "$build/bin/LightClicker" --capture "$build/qa-previews"
 echo "Screens: $build/qa-previews"

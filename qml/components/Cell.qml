@@ -1,5 +1,5 @@
 import QtQuick
-import CClicker
+import LightClicker
 
 // One row inside a Card. Glass: monochrome glyph. Solid: iOS Settings-style grey tile and an
 // inset separator.

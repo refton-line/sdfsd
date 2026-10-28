@@ -19,6 +19,8 @@ layout(std140, binding = 0) uniform buf {
     vec2 light;         // unit vector toward the light
     float magnify;      // lens magnification in the body
     float shade;        // darkening on the far bezel
+    float hasBackdrop;  // 0: no backdrop to sample (overlay window), glass is lit tint only
+    float inset;        // 1: recessed well, lit from below with an inner shadow on top
 };
 layout(binding = 1) uniform sampler2D sharp;
 layout(binding = 2) uniform sampler2D frosted;
@@ -47,19 +49,30 @@ void main() {
     float inner = max(-d, 0.0);
     float t = 1.0 - clamp(inner / max(bezel, 1.0), 0.0, 1.0);
     float curve = t * t;
-    vec2 scale = area.zw / max(itemSize, vec2(1.0));
-    vec2 offset = (-n * refraction * curve - rel * magnify) * scale;
-    vec2 uv = (area.xy + p * scale + offset) / backdropSize;
-    vec2 split = n * dispersion * curve * scale / backdropSize;
-    vec3 clear = vec3(texture(sharp, uv + split).r, texture(sharp, uv).g, texture(sharp, uv - split).b);
-    vec3 soft = vec3(texture(frosted, uv + split).r, texture(frosted, uv).g, texture(frosted, uv - split).b);
-    vec3 col = mix(clear, soft, frost * (1.0 - 0.7 * curve));
-    col = mix(col, tint.rgb, tint.a);
-    float facing = dot(n, light);
+    vec3 col;
+    if (hasBackdrop > 0.5) {
+        vec2 scale = area.zw / max(itemSize, vec2(1.0));
+        float bend = inset > 0.5 ? -0.5 : 1.0;
+        vec2 offset = (-n * refraction * curve * bend - rel * magnify) * scale;
+        vec2 uv = (area.xy + p * scale + offset) / backdropSize;
+        vec2 split = n * dispersion * curve * scale / backdropSize;
+        vec3 clear = vec3(texture(sharp, uv + split).r, texture(sharp, uv).g, texture(sharp, uv - split).b);
+        vec3 soft = vec3(texture(frosted, uv + split).r, texture(frosted, uv).g, texture(frosted, uv - split).b);
+        col = mix(clear, soft, frost * (1.0 - 0.7 * curve));
+        col = mix(col, tint.rgb, tint.a);
+    } else {
+        // Nothing behind to refract: the tint carries a soft vertical sheen instead.
+        float y = qt_TexCoord0.y;
+        col = tint.rgb + vec3(0.10 * (1.0 - y) * (1.0 - y)) - vec3(0.04 * y);
+    }
+    vec2 lightDir = inset > 0.5 ? -light : light;
+    float facing = dot(n, lightDir);
     float rimLine = 1.0 - smoothstep(0.0, 1.6, inner);
     float spec = rimLine * (0.30 + 0.70 * pow(max(facing, 0.0), 1.2)) + rimLine * 0.45 * pow(max(-facing, 0.0), 2.0);
     float glow = curve * max(facing, 0.0) * 0.32;
     col += vec3(spec + glow) * rim;
     col *= 1.0 - shade * curve * max(-facing, 0.0);
+    if (inset > 0.5)
+        col *= 1.0 - 0.08 * curve * max(-facing, 0.0) - 0.02 * curve;
     fragColor = vec4(clamp(col, 0.0, 1.0), 1.0) * coverage * qt_Opacity;
 }

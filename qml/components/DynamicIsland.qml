@@ -1,8 +1,9 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Effects
 import QtQuick.Shapes
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 // iPhone-style Dynamic Island. One black capsule morphs on springs, and its content is clipped
 // to the moving shape. Hover expands it at once into a control panel with mode, rate and
@@ -13,7 +14,6 @@ Item {
     property var engine
     property bool overlay: false
     property bool booting: false
-    property real bootProgress: 0
     property bool hidden: false
     property bool pinned: false
     readonly property bool interactive: !overlay && !booting && !hidden
@@ -34,7 +34,7 @@ Item {
     readonly property bool expanded: interactive && (hover.hovered || pinned)
 
     readonly property string view: hidden ? "hidden"
-        : booting ? "boot"
+        : booting ? "hidden"
         : expanded ? "expanded"
         : errorText !== "" ? "error"
         : summaryShown ? "summary"
@@ -55,7 +55,6 @@ Item {
     readonly property real targetWidth: {
         switch (view) {
         case "hidden": return 14;
-        case "boot": return 42;
         case "idle": return Math.max(172, 44 + idleName.implicitWidth + 24 + idleRate.implicitWidth + 44);
         case "arming": return Math.max(214, 46 + armingLabel.implicitWidth + 64);
         case "live": return Math.max(228, 100 + liveRate.implicitWidth + 48);
@@ -66,7 +65,7 @@ Item {
         }
         return 172;
     }
-    readonly property real targetHeight: view === "hidden" ? 14 : view === "boot" ? 42 : view === "expanded" ? 184
+    readonly property real targetHeight: view === "hidden" ? 14 : view === "expanded" ? 184
         : view === "summary" ? 64 : view === "error" && errorLabel.lineCount > 1 ? 56 : 38
 
     width: targetWidth
@@ -133,16 +132,16 @@ Item {
     }
     onInteractiveChanged: if (!interactive) pinned = false
 
-    // Capsule
-    Rectangle {
+    // Capsule: smoked Liquid Glass refracting the window below it (no backdrop in the overlay
+    // window, where it is lit tint only); plain black on solid.
+    Fill {
         id: capsule
         anchors.fill: parent
         radius: Math.min(height / 2, 36)
         color: Theme.island
-        antialiasing: true
-        // Liquid Glass hint: a faint specular rim on glass, none on solid.
-        border.width: Theme.isGlass && !island.overlay ? 1 : 0
-        border.color: Qt.rgba(1, 1, 1, 0.10)
+        strength: 0.86
+        floating: true
+        detached: island.overlay
     }
 
     // Content lives in a fixed-size layer (no texture churn while morphing) clipped to the capsule.
@@ -172,27 +171,6 @@ Item {
             x: (parent.width - island.width) / 2
             width: island.width; height: island.height
 
-            // boot
-            Face {
-                on: island.view === "boot"
-                Shape {
-                    anchors.centerIn: parent
-                    width: 32; height: 32
-                    preferredRendererType: Shape.CurveRenderer
-                    ShapePath {
-                        strokeColor: Qt.rgba(1, 1, 1, 0.18); strokeWidth: 2.5; fillColor: "transparent"
-                        PathAngleArc { centerX: 16; centerY: 16; radiusX: 13; radiusY: 13; startAngle: 0; sweepAngle: 360 }
-                    }
-                    ShapePath {
-                        strokeColor: Theme.islandText; strokeWidth: 2.5; fillColor: "transparent"; capStyle: ShapePath.RoundCap
-                        PathAngleArc { centerX: 16; centerY: 16; radiusX: 13; radiusY: 13; startAngle: -90; sweepAngle: 360 * island.bootProgress }
-                    }
-                    ShapePath {
-                        strokeColor: Theme.islandText; strokeWidth: 2.4; fillColor: "transparent"; capStyle: ShapePath.RoundCap
-                        PathAngleArc { centerX: 16; centerY: 16; radiusX: 6; radiusY: 6; startAngle: -40 + island.clock * 120; sweepAngle: -280 }
-                    }
-                }
-            }
             // idle
             Face {
                 on: island.view === "idle"
@@ -249,14 +227,16 @@ Item {
                     width: 214; height: 34
                     enabled: island.engine && !island.engine.active
                     opacity: enabled ? 1 : 0.5
-                    Rectangle { anchors.fill: parent; radius: 17; color: Theme.islandRaised }
-                    Rectangle {
+                    Fill { anchors.fill: parent; radius: 17; color: Theme.islandRaised; strength: 0.82; inset: true; floating: true; detached: island.overlay }
+                    Fill {
                         property real slide: island.mode * parent.width / 2
                         Behavior on slide { SpringAnimation { spring: 4; damping: 0.3; epsilon: 0.05 } }
                         x: 3 + slide; y: 3
                         width: parent.width / 2 - 6; height: parent.height - 6
                         radius: height / 2
                         color: "#48484a"
+                        strength: 0.82
+                        floating: true; detached: island.overlay
                     }
                     Row {
                         anchors.fill: parent
@@ -327,13 +307,6 @@ Item {
                     Label { text: "·"; color: Theme.islandMuted; font.pixelSize: 13 }
                     Label { text: island.engine ? I18n.duration(island.engine.elapsedSec) : ""; color: Theme.islandText; font.pixelSize: 13; font.weight: Font.DemiBold; font.features: { "tnum": 1 } }
                 }
-                Row {
-                    x: 20; y: 134
-                    spacing: 8
-                    visible: !island.running
-                    KeyHint { icon: "play"; label: island.engine ? island.engine.startLabel : "" }
-                    KeyHint { icon: "stop"; label: island.engine ? island.engine.stopLabel : "" }
-                }
                 // rate adjust (idle) or live waveform (running)
                 Column {
                     x: action.x - 50; y: 76
@@ -357,9 +330,11 @@ Item {
                     scale: pressed ? 0.88 : hovered ? 1.06 : 1
                     Behavior on scale { SpringAnimation { spring: 5; damping: 0.28; epsilon: 0.001 } }
                     opacity: enabled ? 1 : 0.4
-                    background: Rectangle {
+                    background: Fill {
                         radius: width / 2
                         color: island.running ? Theme.blatantBright : island.arming ? "#3a2a10" : Theme.legitBright
+                        strength: 0.84
+                        floating: true; detached: island.overlay
                         Behavior on color { ColorAnimation { duration: 260 } }
                         CountdownRing {
                             anchors.centerIn: parent
@@ -413,9 +388,11 @@ Item {
             // summary
             Face {
                 on: island.view === "summary"
-                Rectangle {
+                Fill {
                     x: 15; anchors.verticalCenter: parent.verticalCenter
                     width: 34; height: 34; radius: 17
+                    strength: 0.84
+                    floating: true; detached: island.overlay
                     color: island.tint
                     Icon { anchors.centerIn: parent; name: "check"; size: 18; stroke: 2.4; color: "#ffffff" }
                 }
@@ -468,10 +445,12 @@ Item {
         font.weight: Font.DemiBold
         font.features: { "tnum": 1 }
     }
-    component ModeDot: Rectangle {
+    component ModeDot: Fill {
         property real size: 26
         property int mode: 0
         width: size; height: size; radius: size / 2
+        strength: 0.84
+        floating: true; detached: Window.window ? Window.window.objectName === "islandOverlay" : false
         color: Theme.modeBright(mode)
         Behavior on color { ColorAnimation { duration: Theme.slow } }
         Icon { anchors.centerIn: parent; name: parent.mode === 1 ? "bolt" : "hand"; size: parent.size * 0.62; stroke: 2; color: "#ffffff" }
@@ -525,20 +504,6 @@ Item {
             }
         }
     }
-    component KeyHint: Row {
-        id: hint
-        property string icon
-        property string label
-        spacing: 6
-        Icon { name: hint.icon; size: 13; stroke: 2; color: Theme.islandMuted; anchors.verticalCenter: parent.verticalCenter }
-        Rectangle {
-            height: 24; radius: 7
-            width: hintText.implicitWidth + 14
-            color: Theme.islandControl
-            anchors.verticalCenter: parent.verticalCenter
-            Label { id: hintText; anchors.centerIn: parent; text: hint.label; color: Theme.islandText; font.pixelSize: 12; font.weight: Font.DemiBold }
-        }
-    }
     component DarkRound: T.AbstractButton {
         id: round
         property string glyph
@@ -549,7 +514,7 @@ Item {
         opacity: enabled ? 1 : 0.35
         scale: pressed ? 0.88 : 1
         Behavior on scale { SpringAnimation { spring: 5; damping: 0.3; epsilon: 0.001 } }
-        background: Rectangle { radius: 18; color: round.hovered ? "#3a3a3c" : Theme.islandControl }
+        background: Fill { radius: 18; color: round.hovered ? "#3a3a3c" : Theme.islandControl; strength: 0.82; floating: true; detached: Window.window ? Window.window.objectName === "islandOverlay" : false }
         contentItem: Item { Icon { anchors.centerIn: parent; name: round.glyph; size: 16; stroke: 2.2; color: Theme.islandText } }
     }
 }

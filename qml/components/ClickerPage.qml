@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 Item {
     id: page
@@ -25,7 +25,6 @@ Item {
     // ── Mode ────────────────────────────────────────────────────────────────
     Card {
         id: modeCard
-        title: Theme.isGlass ? "" : I18n.t("section.mode")
         width: page.leftWidth
         height: headerHeight + 96
         Item {
@@ -37,10 +36,11 @@ Item {
             property real lensX: target
             Behavior on lensX { enabled: Theme.isGlass; SpringAnimation { spring: Theme.springStiff; damping: Theme.springDamp; epsilon: 0.05 } }
             readonly property real travel: Math.min(70, Math.abs(target - lensX) * 0.35)
-            Rectangle {
+            Fill {
                 visible: Theme.isGlass
                 anchors.fill: parent
                 radius: 24
+                inset: true
                 color: Theme.well
             }
             Surface {
@@ -56,8 +56,8 @@ Item {
             }
             Repeater {
                 model: [
-                    { icon: "hand", title: "mode.legit", sub: "mode.legit.sub" },
-                    { icon: "bolt", title: "mode.blatant", sub: "mode.blatant.sub" }
+                    { icon: "hand", title: "mode.legit" },
+                    { icon: "bolt", title: "mode.blatant" }
                 ]
                 T.AbstractButton {
                     id: tile
@@ -89,10 +89,11 @@ Item {
                         scale: Theme.isGlass && tile.pressed ? 0.96 : 1
                         opacity: !Theme.isGlass && tile.pressed ? 0.6 : 1
                         Behavior on scale { SpringAnimation { spring: 5; damping: 0.3; epsilon: 0.001 } }
-                        Rectangle {
+                        Fill {
                             id: badge
                             x: 16; anchors.verticalCenter: parent.verticalCenter
                             width: 46; height: 46; radius: Theme.isGlass ? 15 : 10
+                            inset: Theme.isGlass && !tile.selected
                             color: tile.selected ? Theme.modeColor(tile.index) : Theme.isGlass ? Theme.well : "#8e8e93"
                             Behavior on color { ColorAnimation { duration: Theme.slow } }
                             Icon {
@@ -104,24 +105,13 @@ Item {
                                 Behavior on rotation { SpringAnimation { spring: 4; damping: 0.25 } }
                             }
                         }
-                        Column {
+                        Label {
                             anchors.left: badge.right; anchors.leftMargin: 14
-                            anchors.right: parent.right; anchors.rightMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 3
-                            Label {
-                                text: I18n.t(tile.modelData.title)
-                                font.pixelSize: 17
-                                font.weight: Font.DemiBold
-                                color: !Theme.isGlass && tile.selected ? "#007aff" : Theme.ink
-                            }
-                            Label {
-                                width: parent.width
-                                elide: Text.ElideRight
-                                text: I18n.t(tile.modelData.sub)
-                                font.pixelSize: Theme.small
-                                color: Theme.muted
-                            }
+                            text: I18n.t(tile.modelData.title)
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                            color: !Theme.isGlass && tile.selected ? "#007aff" : Theme.ink
                         }
                         Rectangle {
                             visible: !Theme.isGlass
@@ -142,7 +132,6 @@ Item {
     // ── Rate ────────────────────────────────────────────────────────────────
     Card {
         id: rateCard
-        title: Theme.isGlass ? "" : I18n.t("cps.title")
         y: modeCard.height + page.gap
         width: page.leftWidth
         height: page.height - modeCard.height - optionsCard.height - 2 * page.gap
@@ -269,12 +258,23 @@ Item {
                         PauseAnimation { duration: chip.index * 30 }
                         SpringAnimation { target: chip; property: "arrive"; to: 1; spring: 4; damping: 0.3; epsilon: 0.002 }
                     }
-                    background: Rectangle {
-                        radius: Theme.isGlass ? height / 2 : 8
-                        color: chip.selected ? Theme.accent : chip.hovered ? (Theme.isGlass ? Qt.rgba(1, 1, 1, 0.75) : Theme.fillStrong) : Theme.well
-                        Behavior on color { ColorAnimation { duration: Theme.base } }
-                        border.width: chip.visualFocus ? 2 : 0
-                        border.color: Theme.focusRing
+                    background: Item {
+                        Fill {
+                            anchors.fill: parent
+                            radius: Theme.isGlass ? height / 2 : 8
+                            color: chip.selected ? Theme.accent
+                                 : Theme.isGlass ? Qt.rgba(1, 1, 1, chip.hovered ? 0.72 : 0.46)
+                                 : chip.hovered ? Theme.fillStrong : Theme.well
+                            Behavior on color { ColorAnimation { duration: Theme.base } }
+                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Theme.isGlass ? height / 2 : 8
+                            color: "transparent"
+                            visible: chip.visualFocus
+                            border.width: 2
+                            border.color: Theme.focusRing
+                        }
                     }
                     contentItem: Label {
                         id: chipText
@@ -294,7 +294,6 @@ Item {
     // ── Options ─────────────────────────────────────────────────────────────
     Card {
         id: optionsCard
-        title: Theme.isGlass ? "" : I18n.t("section.options")
         y: page.height - height
         width: page.leftWidth
         height: headerHeight + options.height + (Theme.isGlass ? 12 : 0)
@@ -416,7 +415,6 @@ Item {
     // ── Session ─────────────────────────────────────────────────────────────
     Card {
         id: live
-        title: Theme.isGlass ? "" : I18n.t("section.session")
         x: page.leftWidth + page.gap
         width: page.rightWidth
         height: page.height
@@ -446,25 +444,9 @@ Item {
                 font.pixelSize: Theme.body; font.weight: Font.DemiBold
             }
         }
-        Rectangle {
-            anchors.right: parent.right; anchors.rightMargin: live.pad
-            y: Theme.isGlass ? 16 : 12
-            height: 26; radius: Theme.isGlass ? 13 : 7
-            width: modeTag.implicitWidth + 34
-            color: Qt.alpha(Theme.modeColor(page.engine.mode), 0.14)
-            Behavior on color { ColorAnimation { duration: Theme.slow } }
-            Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: page.blatant ? "bolt" : "hand"; size: 13; stroke: 2; color: Theme.modeColor(page.engine.mode) }
-            Label {
-                id: modeTag
-                x: 26; anchors.verticalCenter: parent.verticalCenter
-                text: I18n.t(page.blatant ? "mode.blatant" : "mode.legit")
-                color: Qt.darker(Theme.modeColor(page.engine.mode), 1.25)
-                font.pixelSize: 12; font.weight: Font.DemiBold
-            }
-        }
         Label {
             x: live.pad + 2; y: Theme.isGlass ? 64 : 56
-            text: live.running ? I18n.t("cps") : I18n.t("live.target") + " · " + I18n.t("cps")
+            text: I18n.t("cps")
             color: Theme.muted
             font.pixelSize: Theme.small; font.weight: Font.Medium
         }
@@ -596,28 +578,24 @@ Item {
                 }
             }
             NumberAnimation { id: countdownFill; target: startButton; property: "progress"; from: 0; to: 1; easing.type: Easing.Linear }
-            background: Rectangle {
-                radius: Theme.isGlass ? height / 2 : 12
-                color: startButton.live ? Theme.modeColor(page.engine.mode) : startButton.armed ? "#2c2c2e"
-                     : Theme.isGlass ? (startButton.hovered ? "#2c2c2e" : Theme.ink) : "#007aff"
-                Behavior on color { ColorAnimation { duration: Theme.slow } }
-                clip: true
-                Rectangle {
+            background: Item {
+                readonly property real radius: Theme.isGlass ? height / 2 : 12
+                Fill {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    strength: 0.8
+                    color: startButton.live ? Theme.modeColor(page.engine.mode) : startButton.armed ? "#2c2c2e"
+                         : Theme.isGlass ? (startButton.hovered ? "#2c2c2e" : Theme.ink) : "#007aff"
+                    Behavior on color { ColorAnimation { duration: Theme.slow } }
+                }
+                Fill {
                     width: parent.width * startButton.progress
                     height: parent.height
                     radius: parent.radius
+                    strength: 0.85
                     color: Theme.arming
                     opacity: startButton.armed ? 0.9 : 0
                     Behavior on opacity { NumberAnimation { duration: Theme.base } }
-                }
-                Rectangle {
-                    visible: Theme.isGlass
-                    anchors.fill: parent
-                    radius: parent.radius
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.2) }
-                        GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0) }
-                    }
                 }
                 Rectangle {
                     anchors.fill: parent; anchors.margins: -4
@@ -643,20 +621,6 @@ Item {
                               : startButton.live ? I18n.t("stop") : I18n.t("start")
                         color: "#ffffff"
                         font.pixelSize: 16; font.weight: Font.DemiBold
-                    }
-                }
-                Rectangle {
-                    anchors.right: parent.right; anchors.rightMargin: 12
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: 26; radius: 8
-                    width: keyText.implicitWidth + 16
-                    color: Qt.rgba(1, 1, 1, 0.18)
-                    Label {
-                        id: keyText
-                        anchors.centerIn: parent
-                        text: startButton.live || startButton.armed ? page.engine.stopLabel : page.engine.startLabel
-                        color: "#ffffff"
-                        font.pixelSize: Theme.small; font.weight: Font.DemiBold
                     }
                 }
             }

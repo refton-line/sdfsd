@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 Item {
     id: page
@@ -8,7 +8,6 @@ Item {
     signal languageRequested(string code)
 
     Card {
-        title: Theme.isGlass ? "" : I18n.t("nav.language")
         width: parent.width
         height: headerHeight + list.height + (Theme.isGlass ? 20 : 0)
         Column {
@@ -52,10 +51,11 @@ Item {
                         }
                     }
                     contentItem: Item {
-                        Rectangle {
+                        Fill {
                             id: mark
                             x: Theme.isGlass ? 14 : 16; anchors.verticalCenter: parent.verticalCenter
                             width: Theme.isGlass ? 46 : 32; height: width; radius: Theme.isGlass ? 15 : 8
+                            inset: !option.selected
                             color: option.selected ? Theme.accent : Theme.isGlass ? Theme.well : "#8e8e93"
                             Behavior on color { ColorAnimation { duration: Theme.base } }
                             Label {
@@ -65,28 +65,26 @@ Item {
                                 font.pixelSize: Theme.isGlass ? 15 : 12; font.weight: Font.Bold
                             }
                         }
-                        Column {
+                        Label {
                             anchors.left: mark.right; anchors.leftMargin: 16
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-                            Label { text: option.modelData.name; font.pixelSize: Theme.isGlass ? 17 : 15; font.weight: Theme.isGlass ? Font.DemiBold : Font.Normal }
-                            // The language's name in the current UI language, when it differs.
-                            Label {
-                                text: I18n.t("lang." + option.modelData.code)
-                                visible: text !== option.modelData.name
-                                color: Theme.muted
-                                font.pixelSize: Theme.small
-                            }
+                            text: option.modelData.name
+                            font.pixelSize: Theme.isGlass ? 17 : 15; font.weight: Theme.isGlass ? Font.DemiBold : Font.Normal
                         }
                         // Glass: radio disc. Solid: iOS checkmark.
-                        Rectangle {
+                        Item {
                             visible: Theme.isGlass
                             anchors.right: parent.right; anchors.rightMargin: 20
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 26; height: 26; radius: 13
-                            color: option.selected ? Theme.ink : "transparent"
-                            border.width: option.selected ? 0 : 1.5
-                            border.color: Theme.faint
+                            width: 26; height: 26
+                            Fill { anchors.fill: parent; radius: 13; color: option.selected ? Theme.ink : "transparent" }
+                            Rectangle {
+                                anchors.fill: parent; radius: 13
+                                visible: !option.selected
+                                color: "transparent"
+                                border.width: 1.5
+                                border.color: Theme.faint
+                            }
                             Icon {
                                 anchors.centerIn: parent
                                 name: "check"; size: 15; stroke: 2.4; color: "#ffffff"

@@ -17,5 +17,5 @@ Copy-Item "$root\REFERENCES.md" $dist
 Copy-Item "$root\examples" $dist -Recurse -Force
 Copy-Item "$root\START-HERE.txt" $dist
 Copy-Item "$root\licenses" $dist -Recurse -Force
-Write-Host "Ready: $dist\CClicker.exe"
+Write-Host "Ready: $dist\LightClicker.exe"
 Write-Host 'Distribute the WHOLE dist folder, not only the executable. Test on a clean Windows account.'

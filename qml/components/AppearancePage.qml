@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 Item {
     id: page
@@ -13,7 +13,6 @@ Item {
 
     Card {
         id: materialCard
-        title: Theme.isGlass ? "" : I18n.t("look.material")
         icon: "drop"
         width: parent.width
         height: headerHeight + 300
@@ -22,8 +21,8 @@ Item {
             spacing: 14
             Repeater {
                 model: [
-                    { key: "glass", icon: "sparkle", title: "look.glass", sub: "look.glass.sub" },
-                    { key: "solid", icon: "square", title: "look.solid", sub: "look.solid.sub" }
+                    { key: "glass", icon: "sparkle", title: "look.glass" },
+                    { key: "solid", icon: "square", title: "look.solid" }
                 ]
                 T.AbstractButton {
                     id: option
@@ -147,19 +146,20 @@ Item {
                             x: 16; y: preview.y + preview.height + 18
                             spacing: 10
                             Icon { anchors.verticalCenter: parent.verticalCenter; name: option.modelData.icon; size: 20; color: Theme.ink }
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                Label { text: I18n.t(option.modelData.title); font.pixelSize: Theme.headline; font.weight: Font.DemiBold }
-                                Label { text: I18n.t(option.modelData.sub); font.pixelSize: Theme.small; color: Theme.muted }
-                            }
+                            Label { anchors.verticalCenter: parent.verticalCenter; text: I18n.t(option.modelData.title); font.pixelSize: Theme.headline; font.weight: Font.DemiBold }
                         }
-                        Rectangle {
+                        Item {
                             anchors.right: parent.right; anchors.rightMargin: 16
-                            y: preview.y + preview.height + 24
-                            width: 26; height: 26; radius: 13
-                            color: option.selected ? Theme.accent : "transparent"
-                            border.width: option.selected ? 0 : 1.5
-                            border.color: "#c7c7cc"
+                            y: preview.y + preview.height + 16
+                            width: 26; height: 26
+                            Fill { anchors.fill: parent; radius: 13; color: option.selected ? Theme.accent : "transparent" }
+                            Rectangle {
+                                anchors.fill: parent; radius: 13
+                                visible: !option.selected
+                                color: "transparent"
+                                border.width: 1.5
+                                border.color: "#c7c7cc"
+                            }
                             Icon {
                                 anchors.centerIn: parent
                                 name: "check"; size: 15; stroke: 2.4; color: "#ffffff"
@@ -173,7 +173,6 @@ Item {
         }
     }
     Card {
-        title: Theme.isGlass ? "" : I18n.t("section.island")
         y: materialCard.height + Theme.gap
         width: parent.width
         height: headerHeight + Theme.rowHeight + (Theme.isGlass ? 18 : 0)

@@ -1,5 +1,5 @@
 import QtQuick
-import CClicker
+import LightClicker
 
 // Glass: [− value +] capsule. Solid: value, then the iOS stepper pill.
 // Values can be typed; holding a button repeats.
@@ -28,10 +28,11 @@ Item {
     }
     readonly property real buttonsWidth: Theme.isGlass ? 0 : 94
 
-    Rectangle {
+    Fill {
         visible: Theme.isGlass
         anchors.fill: parent
         radius: height / 2
+        inset: true
         color: Theme.well
     }
     TextInput {

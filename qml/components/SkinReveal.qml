@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Window
-import CClicker
+import LightClicker
 
 // Material switch: snapshot the current look, apply the new material underneath, then wash the
 // old look away in a circle that grows from the pointer with a bright liquid front

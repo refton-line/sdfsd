@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 // Glass: a floating glass sheet that springs in over a blurred window.
 // Solid: an iOS 14 card that slides up over a dimmed window.

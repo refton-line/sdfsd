@@ -690,6 +690,28 @@ int main(int argc, char **argv) {
     oldFile.open(QIODevice::ReadOnly);
     check(oldFile.readAll() == oldDoc, "legacy source not rewritten");
     oldFile.close();
+    // Profiles written by earlier versions under the previous format id keep loading.
+    QJsonObject renamed = Configuration::encode(e.config());
+    const auto cClickerDoc = QJsonDocument(QJsonObject{{"format", "c-clicker"},
+                                                       {"version", 4},
+                                                       {"name", "Before rename"},
+                                                       {"settings", renamed}})
+                                 .toJson();
+    QFile cClickerFile(temp.path() + "/before-rename.json");
+    cClickerFile.open(QIODevice::WriteOnly);
+    cClickerFile.write(cClickerDoc);
+    cClickerFile.close();
+    check(store.importFile(QUrl::fromLocalFile(cClickerFile.fileName())), "import previous-format v4 profile");
+    const auto unknownDoc = QJsonDocument(QJsonObject{{"format", "light-clicker"},
+                                                      {"version", 3},
+                                                      {"name", "Wrong version"},
+                                                      {"settings", renamed}})
+                                .toJson();
+    QFile unknownFile(temp.path() + "/wrong-version.json");
+    unknownFile.open(QIODevice::WriteOnly);
+    unknownFile.write(unknownDoc);
+    unknownFile.close();
+    check(!store.importFile(QUrl::fromLocalFile(unknownFile.fileName())), "light-clicker accepts only v4");
     bool namedKeys = true;
     for (int k = 0; k < 512; ++k)
         if (Configuration::validKey(k) || Configuration::validChordKey(k))

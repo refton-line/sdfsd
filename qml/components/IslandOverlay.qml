@@ -1,11 +1,12 @@
 import QtQuick
 import QtQuick.Window
-import CClicker
+import LightClicker
 
 // The island above other windows while clicking in a game or app. The window is clipped to
 // the capsule every frame of its animation and never takes focus or mouse input.
 Window {
     id: overlay
+    objectName: "islandOverlay"
     property var engine
     property bool wanted: false
     property alias island: island
@@ -14,7 +15,7 @@ Window {
     color: "transparent"
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus | Qt.NoDropShadowWindowHint
     visible: false
-    title: "C clicker island"
+    title: "Light clicker island"
 
     function place() {
         const s = overlay.screen;

@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 T.TextField {
     id: field

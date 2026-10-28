@@ -18,17 +18,17 @@
 int main(int argc, char *argv[]) {
 #ifdef Q_OS_WIN
     // Stable shell identity for taskbar grouping and pinned shortcuts.
-    SetCurrentProcessExplicitAppUserModelID(L"CClicker.Desktop");
+    SetCurrentProcessExplicitAppUserModelID(L"LightClicker.Desktop");
 #endif
     QGuiApplication app(argc, argv);
     // Keep the established storage identity: an upgrade does not move or delete user data.
-    app.setApplicationDisplayName("C clicker");
+    app.setApplicationDisplayName("Light clicker");
     app.setOrganizationName("ObsidianClick");
     app.setApplicationName("ObsidianClick");
-    app.setApplicationVersion("0.6.0");
-    app.setWindowIcon(QIcon(":/qt/qml/CClicker/assets/app-icon.png"));
+    app.setApplicationVersion("0.7.0");
+    app.setWindowIcon(QIcon(":/qt/qml/LightClicker/assets/app-icon.png"));
     for (const char *face : {"Regular", "Medium", "SemiBold", "Bold"})
-        QFontDatabase::addApplicationFont(QString(":/qt/qml/CClicker/assets/fonts/Inter-%1.ttf").arg(face));
+        QFontDatabase::addApplicationFont(QString(":/qt/qml/LightClicker/assets/fonts/Inter-%1.ttf").arg(face));
     QQuickStyle::setStyle("Basic");
     StartupController startup;
     ClickController clicks;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
         [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
-    engine.loadFromModule("CClicker", "Main");
+    engine.loadFromModule("LightClicker", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
     auto *win = qobject_cast<QQuickWindow *>(engine.rootObjects().first());

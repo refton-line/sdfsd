@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 // Glass: iOS 26 switch whose knob turns into a clear lens while pressed.
 // Solid: the classic iOS 14 switch.
@@ -16,12 +16,20 @@ T.Switch {
     }
     indicator: Item {
         anchors.fill: parent
+        Fill {
+            anchors.fill: parent
+            radius: height / 2
+            inset: !control.checked
+            strength: 0.78
+            color: control.checked ? Theme.legit : Theme.isGlass ? Qt.rgba(0.47, 0.47, 0.5, 0.2) : "#e9e9eb"
+            Behavior on color { ColorAnimation { duration: 220 } }
+        }
         Rectangle {
             anchors.fill: parent
             radius: height / 2
-            color: control.checked ? Theme.legit : Theme.isGlass ? Qt.rgba(0.47, 0.47, 0.5, 0.2) : "#e9e9eb"
-            Behavior on color { ColorAnimation { duration: 220 } }
-            border.width: control.visualFocus ? 2 : 0
+            color: "transparent"
+            visible: control.visualFocus
+            border.width: 2
             border.color: Theme.focusRing
         }
         // Glass knob

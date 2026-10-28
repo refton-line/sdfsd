@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 import "KeyboardMap.js" as KeyMap
 
 // Physical-key picker. Keys can be chosen by mouse or by pressing them; the controller owns
@@ -36,7 +36,7 @@ ModalSheet {
     contentItem: Item {
         implicitHeight: footer.y + footer.height
         focus: true
-        Rectangle {
+        Fill {
             id: badge
             width: 36; height: 36; radius: Theme.isGlass ? 12 : 8
             color: picker.targetBinding === 0 ? Theme.legit : Theme.blatant
@@ -70,7 +70,7 @@ ModalSheet {
         Item {
             id: chosen
             y: 56; width: parent.width; height: 48
-            Rectangle { anchors.fill: parent; radius: Theme.isGlass ? 16 : 10; color: Theme.well }
+            Fill { anchors.fill: parent; radius: Theme.isGlass ? 16 : 10; inset: true; color: Theme.well }
             Label {
                 x: 18; anchors.verticalCenter: parent.verticalCenter
                 visible: picker.chosenKeys.length === 0
@@ -94,7 +94,7 @@ ModalSheet {
                         onClicked: picker.choose(modelData)
                         scale: pressed ? 0.94 : 1
                         Behavior on scale { SpringAnimation { spring: 5; damping: 0.3; epsilon: 0.001 } }
-                        background: Rectangle { radius: Theme.isGlass ? 11 : 8; color: Theme.accent }
+                        background: Fill { radius: Theme.isGlass ? 11 : 8; color: Theme.accent; strength: 0.8 }
                         contentItem: Item {
                             Label { id: draftText; x: 12; anchors.verticalCenter: parent.verticalCenter; text: picker.engine.keyName(draftChip.modelData); color: "#ffffff"; font.pixelSize: 13; font.weight: Font.DemiBold }
                             Icon { anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; name: "x"; size: 12; color: Qt.rgba(1, 1, 1, 0.7) }
@@ -129,23 +129,35 @@ ModalSheet {
                     Accessible.name: modelData.t
                     onClicked: picker.choose(modelData.v)
                     // Glass: translucent caps with a bright rim. Solid: iOS keyboard caps with a base shadow.
-                    background: Rectangle {
+                    background: Item {
                         anchors.fill: parent
                         anchors.margins: 2.5
-                        radius: Theme.isGlass ? 9 : 6
+                        readonly property real radius: Theme.isGlass ? 9 : 6
                         scale: keycap.held ? 0.93 : 1
                         Behavior on scale { SpringAnimation { spring: 6; damping: 0.3; epsilon: 0.001 } }
-                        color: keycap.held ? Theme.focusRing : keycap.selected ? Theme.accent
-                             : keycap.hovered && keycap.enabled ? Theme.white
-                             : keycap.enabled ? (Theme.isGlass ? Qt.rgba(1, 1, 1, 0.5) : "#ffffff") : Theme.well
-                        Behavior on color { ColorAnimation { duration: 90 } }
-                        border.width: keycap.visualFocus ? 2 : Theme.isGlass ? 1 : 0
-                        border.color: keycap.visualFocus ? Theme.focusRing : Qt.rgba(1, 1, 1, 0.9)
                         Rectangle {
                             visible: !Theme.isGlass && keycap.enabled
                             anchors.fill: parent; anchors.bottomMargin: -1.5
-                            radius: parent.radius; z: -1
+                            radius: parent.radius
                             color: Qt.rgba(0, 0, 0, 0.22)
+                        }
+                        Fill {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            inset: !keycap.enabled
+                            strength: 0.8
+                            color: keycap.held ? Theme.focusRing : keycap.selected ? Theme.accent
+                                 : keycap.hovered && keycap.enabled ? (Theme.isGlass ? Qt.rgba(1, 1, 1, 0.78) : Theme.white)
+                                 : keycap.enabled ? (Theme.isGlass ? Qt.rgba(1, 1, 1, 0.42) : "#ffffff") : Theme.well
+                            Behavior on color { ColorAnimation { duration: 90 } }
+                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: "transparent"
+                            visible: keycap.visualFocus
+                            border.width: 2
+                            border.color: Theme.focusRing
                         }
                         Rectangle {
                             visible: keycap.modelData.v === 144

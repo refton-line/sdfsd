@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 // kind: "normal" | "primary" | "danger" | "plain".
 // Glass: glass capsules that squash on press. Solid: iOS 14 rounded buttons that dim on press.
@@ -35,20 +35,14 @@ T.AbstractButton {
             tintAlpha: control.pressed ? 0.25 : control.hovered ? 0.7 : 0.55
             magnify: control.pressed ? 0.08 : 0
         }
-        Rectangle {
+        Fill {
             anchors.fill: parent
             visible: Theme.isGlass && control.filled
             radius: height / 2
+            strength: 0.8
+            magnify: control.pressed ? 0.08 : 0
             color: control.hovered ? Qt.lighter(control.fillColor, control.kind === "primary" ? 1.5 : 1.08) : control.fillColor
             Behavior on color { ColorAnimation { duration: Theme.base } }
-            Rectangle {
-                anchors.fill: parent
-                radius: parent.radius
-                gradient: Gradient {
-                    GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.22) }
-                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0) }
-                }
-            }
         }
         Rectangle {
             anchors.fill: parent

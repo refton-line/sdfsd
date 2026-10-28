@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Templates as T
-import CClicker
+import LightClicker
 
 Item {
     id: page
@@ -23,7 +23,7 @@ Item {
                 height: headerHeight + Math.max(Theme.isGlass ? 190 : 150, (Theme.isGlass ? 84 : 20) + flow.implicitHeight + 20)
                 Behavior on height { SpringAnimation { spring: 3.5; damping: 0.32; epsilon: 0.1 } }
                 // Glass header: coloured badge, title and add button inside the panel.
-                Rectangle {
+                Fill {
                     id: badge
                     visible: Theme.isGlass
                     x: 22; y: 22
@@ -107,15 +107,14 @@ Item {
                                     spacing: 6
                                     Repeater {
                                         model: keyChip.modelData.keys
-                                        Rectangle {
+                                        Fill {
                                             id: cap
                                             required property int modelData
                                             height: 28; radius: Theme.isGlass ? 8 : 6
                                             width: Math.max(28, capText.implicitWidth + 14)
                                             color: Theme.white
-                                            border.width: Theme.isGlass ? 1 : 0
-                                            border.color: Theme.hairline
-                                            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; radius: 1; color: Theme.isGlass ? Theme.hairline : Qt.rgba(0, 0, 0, 0.18) }
+                                            strength: 0.62
+                                            Rectangle { visible: !Theme.isGlass; anchors.bottom: parent.bottom; width: parent.width; height: 2; radius: 1; color: Qt.rgba(0, 0, 0, 0.18) }
                                             Label {
                                                 id: capText
                                                 anchors.centerIn: parent
@@ -147,7 +146,6 @@ Item {
 
     Card {
         id: settingsCard
-        title: Theme.isGlass ? "" : I18n.t("keys.countdown")
         y: cards.y + cards.childrenRect.height + Theme.gap
         width: parent.width
         height: headerHeight + Theme.rowHeight + (Theme.isGlass ? 18 : 0)

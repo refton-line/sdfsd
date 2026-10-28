@@ -1,5 +1,5 @@
 import QtQuick
-import CClicker
+import LightClicker
 
 // Card background for either material: a Liquid Glass panel or an opaque iOS 14 cell group.
 Item {
@@ -18,7 +18,7 @@ Item {
         visible: surface.elevation > 0 && (Theme.isGlass || surface.solidShadow) && surface.width >= 40 && surface.height >= 40
         x: -37; y: -37 + 6 * surface.elevation
         width: parent.width + 74; height: parent.height + 74
-        source: "qrc:/qt/qml/CClicker/assets/shadow.png"
+        source: "qrc:/qt/qml/LightClicker/assets/shadow.png"
         border { left: 56; right: 56; top: 56; bottom: 56 }
         opacity: Theme.isGlass ? 0.26 * Math.min(1.6, surface.elevation) : 0.16
     }

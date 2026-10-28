@@ -61,6 +61,8 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
                 QTimer::singleShot(ms, win, [=] { shot(midShot + "-" + QString::number(ms)); });
     };
     add(260, [=] { shot("01-boot"); });
+    add(820, [=] { shot("01-loading"); });
+    add(1080, [=] { shot("01-launch-fly"); });
     add(1350, [=] { shot("02-launch"); });
     add(2600, [=] { shot("03-glass-clicker"); });
     add(2700, [=] { island(true); });
