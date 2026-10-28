@@ -18,7 +18,7 @@ practically tops out around ~1000 CPS. Uncapped throughput is a Blatant feature.
 ## Interface
 Two materials, and switching between them changes the whole app. The new look washes over the old one in a circle that grows from the pointer and has a bright liquid front. Labels are kept to names and values; there are no hint or subtitle lines.
 
-**Logo and launch.** The mark is a shining four-point star with rays, split down the middle: the left half is Liquid Glass that refracts what is behind it, the right half is plain ink. The app icon uses the same split, with a frosted-glass | white tile. Launch shows the large split star in the middle of the window. Its rays light one by one with startup progress, then it flies into the title bar (glass) or the sidebar (solid) and stays there as the logo.
+**Logo and launch.** The mark is a shining five-point star in a ring of rays, split down the middle: the left half is Liquid Glass that refracts what is behind it, the right half is plain ink. The app icon uses the same split, with a frosted-glass | white tile. Launch shows the large split star in the middle of the window. Its rays light one by one with startup progress, then it flies into the title bar (glass) or the sidebar (solid) and stays there as the logo.
 
 | | **Liquid Glass** (iOS 26/27) | **Solid** (iOS 14) |
 |---|---|---|

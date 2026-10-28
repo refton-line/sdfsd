@@ -70,15 +70,17 @@ materials (sparkle, square), profile actions (check, pencil, duplicate, export, 
 folder), window chrome, and status (warning, check circle).
 
 ## Logo
-`shaders/mark.frag` draws the mark: a four-point sparkle (a concave superellipse, the vertical points
-a little longer) with eight rays set 22.5° off the axes, long and short alternating, so the split
-never runs along a ray. Left of the split it is Liquid Glass: it refracts the stage behind it and has
-a lit bezel, a two-sided rim, a soft halo and a glint that crosses it. Right of the split it is
-solid `#1d1d1f`. Below 60 px it switches to a simpler form (a fuller star, four diagonal rays and a
-graphite edge on the glass half) so it stays legible in the title bar. `AppMark.qml` wraps it;
-`progress` lights the rays during launch. The Windows icon (`assets/app.ico`, 16–256 px) and the
-window icon are rendered from the same shader by `scripts/render-icon.sh` and `tools/icon/RenderIcon.qml`,
-with a squircle tile split the same way (frosted glass | white). Sizes up to 32 px leave out the rays.
+`shaders/mark.frag` draws the mark: a rounded five-point star, point up (an exact distance field
+after Inigo Quilez's `sdStar5`, notch radius 0.5 of the tip radius), ringed by ten rays set 18° off
+its points. The rays are mirror-symmetric about the vertical axis and alternate long and short down
+each side, so the split runs through the top tip and the bottom notch and never along a ray. Left of
+the split it is Liquid Glass: it refracts the stage behind it and has a lit bezel, a two-sided rim, a
+soft halo and a glint that crosses it. Right of the split it is solid `#1d1d1f`. Below 60 px it
+switches to a simpler form (a chubbier star, four rays and a graphite edge on the glass half) so it
+stays legible in the title bar. `AppMark.qml` wraps it; `progress` lights the rays one by one during
+launch. The Windows icon (`assets/app.ico`, 16–256 px) and the window icon are rendered from the same
+shader by `scripts/render-icon.sh` and `tools/icon/RenderIcon.qml`, with a squircle tile split the
+same way (frosted glass | white). Sizes up to 32 px leave out the rays.
 
 ## Type
 Inter (OFL, bundled, Cyrillic coverage) stands in for SF Pro, which cannot be redistributed.
