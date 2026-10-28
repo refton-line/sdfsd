@@ -50,7 +50,7 @@ bright liquid band that bends the old image outward as it passes.
 - Springs (`SpringAnimation`) for spatial glass motion. Critically damped springs or ease-out curves for solid.
 - Outgoing content leaves quickly (110–150 ms). Incoming content arrives in 260–380 ms and starts at once, with no gap between the two.
 - Continuous effects (island waveform, countdown ring, pulse, tab-bar lens speed) are evaluated every frame from a running clock rather than as looping keyframes, so they never visibly stop or step.
-- Launch: the split star loads at the window centre; its rays light one by one with startup progress. It then flies (820 ms, in-out cubic) into the title bar or the sidebar and becomes the logo. The island grows from a dot in the title bar, and navigation, content and controls follow in a stagger.
+- Launch: the split star loads at the window centre; its ink half fills from the bottom up with startup progress. It then flies (820 ms, in-out cubic) into the title bar or the sidebar and becomes the logo. The island grows from a dot in the title bar, and navigation, content and controls follow in a stagger.
 - Close: input stops first. Content sinks and fades, the island collapses to a dot, then the window closes.
 
 ## Dynamic Island
@@ -70,15 +70,16 @@ materials (sparkle, square), profile actions (check, pencil, duplicate, export, 
 folder), window chrome, and status (warning, check circle).
 
 ## Logo
-`shaders/mark.frag` draws the mark: a four-point sparkle (a concave superellipse, the vertical points
-a little longer) with eight rays set 22.5° off the axes, long and short alternating, so the split
-never runs along a ray. Left of the split it is Liquid Glass: it refracts the stage behind it and has
-a lit bezel, a two-sided rim, a soft halo and a glint that crosses it. Right of the split it is
-solid `#1d1d1f`. Below 60 px it switches to a simpler form (a fuller star, four diagonal rays and a
-graphite edge on the glass half) so it stays legible in the title bar. `AppMark.qml` wraps it;
-`progress` lights the rays during launch. The Windows icon (`assets/app.ico`, 16–256 px) and the
-window icon are rendered from the same shader by `scripts/render-icon.sh` and `tools/icon/RenderIcon.qml`,
-with a squircle tile split the same way (frosted glass | white). Sizes up to 32 px leave out the rays.
+`shaders/mark.frag` draws the mark: a rounded five-point star, point up (an exact distance field
+after Inigo Quilez's `sdStar5`, notch radius 0.5 of the tip radius), lowered slightly so it sits
+centred. The split runs through the top tip and the bottom notch. Left of the split it is Liquid
+Glass: it refracts the stage behind it and has a lit bezel, a two-sided rim and a contact shadow.
+Right of the split it is solid `#1d1d1f`. Below 60 px the star gets chubbier, with softer tips and
+a graphite edge on the glass half, so it stays legible in the title bar. `AppMark.qml` wraps it;
+during launch `progress` fills the ink half from the bottom up, and the unfilled part waits as a
+faint star. The Windows icon (`assets/app.ico`, 16–256 px) and the window icon are rendered from
+the same shader by `scripts/render-icon.sh` and `tools/icon/RenderIcon.qml`, with a squircle tile
+split the same way (frosted glass | white).
 
 ## Type
 Inter (OFL, bundled, Cyrillic coverage) stands in for SF Pro, which cannot be redistributed.

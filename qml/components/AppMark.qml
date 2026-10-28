@@ -1,22 +1,18 @@
 import QtQuick
 import LightClicker
 
-// Brand mark: a shining four-point star with rays, split down the middle into Liquid Glass and
-// plain ink (shaders/mark.frag). `progress` lights the rays one by one (launch); `live` runs the
-// shimmer and the glint that crosses the glass half.
+// Brand mark: a five-point star split down the middle into Liquid Glass and plain ink
+// (shaders/mark.frag). `progress` fills the ink half from the bottom up (launch).
 ShaderEffect {
     id: mark
     property real size: 28
     property real progress: 1
-    property bool live: false
     property bool tile: false
     property real split: 0.5
     property color inkColor: Theme.ink
     width: size
     height: size
 
-    property real time: 1.05
-    FrameAnimation { running: mark.live && mark.visible && Theme.animating; onTriggered: mark.time += frameTime }
 
     readonly property size itemSize: Qt.size(Math.max(1, width), Math.max(1, height))
     property rect area: Qt.rect(0, 0, width, height)

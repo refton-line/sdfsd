@@ -341,7 +341,7 @@ ApplicationWindow {
             y: 11
         }
 
-        // Launch: the split star loads in the middle (rays light with startup progress), then flies
+        // Launch: the split star loads in the middle (its ink half fills with startup progress), then flies
         // into the title bar (glass) or the sidebar (solid) and stays there as the logo.
         AppMark {
             id: brand
@@ -355,9 +355,7 @@ ApplicationWindow {
             x: (win.width - size) / 2 + (homeX - (win.width - size) / 2) * fly
             y: (win.height - size) / 2 + (homeY - (win.height - size) / 2) * fly
             progress: bootRing.value
-            live: !win.launched || brandHover.hovered
             opacity: stage.opacity
-            HoverHandler { id: brandHover }
             QtObject {
                 id: bootRing
                 property real value: startup.progress / 100

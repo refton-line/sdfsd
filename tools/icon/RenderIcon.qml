@@ -39,8 +39,7 @@ Window {
             property rect area: Qt.rect(0, 0, 1024, 1024)
             property size backdropSize: Qt.size(1024, 1024)
             property real split: 0.5
-            property real progress: modelData <= 32 ? 0 : 1
-            property real time: 1.05
+            property real progress: 1
             property real tile: 1
             property real hasBackdrop: 1
             property vector4d ink: Qt.vector4d(0.114, 0.114, 0.122, 1)
