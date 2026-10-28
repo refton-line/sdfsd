@@ -1,7 +1,7 @@
 import QtQuick
 import LightClicker
 
-// Brand mark: a shining four-point star with rays, split down the middle into Liquid Glass and
+// Brand mark: a shining five-point star with rays, split down the middle into Liquid Glass and
 // plain ink (shaders/mark.frag). `progress` lights the rays one by one (launch); `live` runs the
 // shimmer and the glint that crosses the glass half.
 ShaderEffect {
