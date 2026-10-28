@@ -56,11 +56,13 @@ void main() {
         vec2 offset = (-n * refraction * curve * bend - rel * magnify) * scale;
         vec2 uv = (area.xy + p * scale + offset) / backdropSize;
         vec2 split = n * dispersion * curve * scale / backdropSize;
+        // Never sample past the backdrop edge: clamped samples smear into streaks.
+        vec2 lo = 1.5 / backdropSize, hi = 1.0 - lo;
+        uv = clamp(uv, lo + abs(split), hi - abs(split));
         vec3 clear = vec3(texture(sharp, uv + split).r, texture(sharp, uv).g, texture(sharp, uv - split).b);
         vec3 soft = vec3(texture(frosted, uv + split).r, texture(frosted, uv).g, texture(frosted, uv - split).b);
-        // The bezel stays partly frosted: thin bright lines behind the edge would otherwise turn
-        // into sharp specks.
-        col = mix(clear, soft, frost * (1.0 - 0.35 * curve));
+        // Only the body may be clear: a sharp bezel turns thin lines behind it into specks.
+        col = mix(clear, soft, frost);
         col = mix(col, tint.rgb, tint.a);
     } else {
         // Nothing behind to refract: the tint carries a soft vertical sheen instead.

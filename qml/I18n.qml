@@ -10,6 +10,8 @@ QtObject {
 
     readonly property var en: ({
         "app": "Light clicker",
+        "target": "Window", "target.any": "Any window", "target.title": "Choose a window", "target.refresh": "Refresh",
+        "msg.targetGone": "The chosen window was closed", "msg.targetNotFront": "Bring the chosen window to the front",
         "nav.clicker": "Clicker", "nav.hotkeys": "Hotkeys", "nav.profiles": "Profiles",
         "nav.appearance": "Appearance", "nav.language": "Language",
         "mode.legit": "Legit", "mode.blatant": "Blatant",
@@ -72,6 +74,8 @@ QtObject {
 
     readonly property var ru: ({
         "app": "Light clicker",
+        "target": "Окно", "target.any": "Любое окно", "target.title": "Выберите окно", "target.refresh": "Обновить",
+        "msg.targetGone": "Выбранное окно закрыто", "msg.targetNotFront": "Выведите выбранное окно на передний план",
         "nav.clicker": "Кликер", "nav.hotkeys": "Клавиши", "nav.profiles": "Профили",
         "nav.appearance": "Оформление", "nav.language": "Язык",
         "mode.legit": "Легит", "mode.blatant": "Блатант",

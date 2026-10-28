@@ -33,16 +33,6 @@ ApplicationWindow {
     property real loadRamp: 0         // paces the star's loading fill so it never jumps
     property real drain: 0            // close: the star's ink half empties again
     property real farewell: 0         // close: star and wallpaper fade back to the plain window
-    property bool folded: false       // UI folded away for minimize; unfolds when the window returns
-    // Maximize/restore morph: the UI, laid out for the new size, starts where the old window was.
-    property rect morphFrom: Qt.rect(0, 0, 0, 0)
-    property real morph: 1
-    property bool morphPending: false
-    readonly property real morphE: 1 - morph
-    readonly property real morphSx: morphFrom.width > 0 ? 1 + (morphFrom.width / Math.max(1, width) - 1) * morphE : 1
-    readonly property real morphSy: morphFrom.height > 0 ? 1 + (morphFrom.height / Math.max(1, height) - 1) * morphE : 1
-    readonly property real morphDx: morphFrom.width > 0 ? (morphFrom.x - x) * morphE : 0
-    readonly property real morphDy: morphFrom.height > 0 ? (morphFrom.y - y) * morphE : 0
     property bool launched: false
     property bool minimumElapsed: false
     property bool exiting: false
@@ -89,39 +79,15 @@ ApplicationWindow {
         const t = Math.max(0, Math.min(1, (v - a) / length));
         return t * t * (3 - 2 * t);
     }
+    // Native commands so Windows plays its own minimize/maximize/restore animations.
     function toggleMaximized() {
-        morphAnimation.stop();
-        morphFrom = Qt.rect(x, y, width, height);
-        morph = 0;
-        morphPending = true;
-        morphFallback.restart();
-        if (maximized) showNormal(); else showMaximized();
-    }
-    function beginMorph() {
-        morphPending = false;
-        morphFallback.stop();
-        morphAnimation.restart();
-    }
-    // The UI sinks toward the taskbar first; the star stays, so the taskbar preview shows the logo.
-    function minimizeAnimated() {
-        if (exiting || minimizeAnimation.running)
-            return;
-        if (!launched) {
-            showMinimized();
-            return;
+        if (!windowEffects.toggleMaximize(win)) {
+            if (maximized) showNormal(); else showMaximized();
         }
-        minimizeAnimation.start();
     }
-    onWidthChanged: if (morphPending) beginMorph()
-    onHeightChanged: if (morphPending) beginMorph()
-    onVisibilityChanged: function() {
-        if (folded && !minimizeAnimation.running && win.visibility !== Window.Minimized && win.visibility !== Window.Hidden)
-            unfold();
-    }
-    function unfold() {
-        folded = false;
-        unfoldFallback.stop();
-        unfoldAnimation.restart();
+    function minimizeWindow() {
+        if (!windowEffects.minimize(win))
+            showMinimized();
     }
 
     Component.onCompleted: {
@@ -189,7 +155,6 @@ ApplicationWindow {
         ScriptAction { script: { island.hidden = true; overlay.wanted = false; } }
         ParallelAnimation {
             NumberAnimation { target: win; property: "reveal"; to: 0; duration: 420 * motionScale; easing.type: Easing.InOutCubic }
-            NumberAnimation { target: win; property: "morph"; to: 1; duration: 200 * motionScale }
             SequentialAnimation {
                 PauseAnimation { duration: 140 * motionScale }
                 NumberAnimation { target: win; property: "brandFly"; to: 0; duration: 500 * motionScale; easing.type: Easing.InOutCubic }
@@ -203,26 +168,6 @@ ApplicationWindow {
         // The overlay is a second native window; take it down before the last window closes.
         ScriptAction { script: { overlay.visible = false; win.allowClose = true; win.close(); } }
     }
-    SequentialAnimation {
-        id: minimizeAnimation
-        ScriptAction { script: { win.folded = true; island.hidden = true; } }
-        NumberAnimation { target: win; property: "reveal"; to: 0; duration: 300 * motionScale; easing.type: Easing.InCubic }
-        ScriptAction { script: { win.showMinimized(); unfoldFallback.restart(); } }
-    }
-    SequentialAnimation {
-        id: unfoldAnimation
-        ScriptAction { script: island.hidden = false }
-        NumberAnimation { target: win; property: "reveal"; to: 1; duration: 640 * motionScale; easing.type: Easing.InOutCubic }
-    }
-    // Without a window manager honouring the request the window never minimizes: unfold again.
-    Timer { id: unfoldFallback; interval: 700 * motionScale; onTriggered: if (win.folded && win.visibility !== Window.Minimized) win.unfold() }
-    NumberAnimation {
-        id: morphAnimation
-        target: win; property: "morph"; to: 1; duration: 440 * motionScale
-        easing.type: Easing.BezierSpline; easing.bezierCurve: [0.25, 0.1, 0.25, 1, 1, 1]
-    }
-    // The window state did not change (or no window manager): drop the morph without a jump.
-    Timer { id: morphFallback; interval: 500 * motionScale; onTriggered: { if (win.morphPending) { win.morphPending = false; win.morph = 1; } } }
     SequentialAnimation {
         id: languageSwap
         NumberAnimation { target: win; property: "languageFade"; to: 0; duration: 140; easing.type: Easing.InQuad }
@@ -253,6 +198,40 @@ ApplicationWindow {
         id: overlay
         engine: clickEngine
         wanted: prefs.islandOverlay && win.launched && !win.exiting && !win.active && (clickEngine.active || win.lingering)
+    }
+    WindowSheet {
+        id: windowSheet
+        engine: clickEngine
+        roomWidth: win.width - 48
+        roomHeight: win.height - 40
+    }
+    // The island reports every real change, not only mode and language.
+    QtObject {
+        id: watch
+        readonly property bool live: win.launched && !win.exiting
+        function say(icon, text) { if (live && !island.expanded) island.notify(icon, text, Theme.islandText); }
+        readonly property double cps: clickEngine.cps
+        readonly property int button: clickEngine.mouseButton
+        readonly property int variance: clickEngine.variance
+        readonly property int hold: clickEngine.holdMs
+        readonly property int duration: clickEngine.durationSec
+        readonly property double count: clickEngine.countLimit
+        readonly property int delay: clickEngine.launchDelaySec
+        readonly property string startKey: clickEngine.startLabel
+        readonly property string stopKey: clickEngine.stopLabel
+        readonly property string target: clickEngine.targetWindow
+        readonly property bool overlayOn: prefs.islandOverlay
+        onCpsChanged: say("pulse", I18n.rate(cps) + " " + I18n.t("cps"))
+        onButtonChanged: say("mouse", I18n.t("button") + " · " + I18n.t("button." + button))
+        onVarianceChanged: say("wave", I18n.t("variance") + " · " + I18n.t("variance." + variance))
+        onHoldChanged: say("timer", I18n.t("hold") + " · " + (hold === 0 ? I18n.t("hold.instant") : hold + " " + I18n.t("ms")))
+        onDurationChanged: say("hourglass", I18n.t("limit.time") + " · " + (duration === 0 ? "∞" : I18n.duration(duration)))
+        onCountChanged: say("cursor", I18n.t("limit.clicks") + " · " + (count === 0 ? "∞" : I18n.number(count, 0)))
+        onDelayChanged: say("timer", I18n.t("keys.countdown") + " · " + delay + " " + I18n.t("sec"))
+        onStartKeyChanged: say("play", I18n.t("keys.start") + " · " + startKey)
+        onStopKeyChanged: say("stop", I18n.t("keys.stop") + " · " + stopKey)
+        onTargetChanged: say("target", target === "" ? I18n.t("target.any") : clickEngine.targetTitle)
+        onOverlayOnChanged: say("island", I18n.t("look.island") + " · " + (overlayOn ? "✓" : "—"))
     }
     KeyboardSheet {
         id: keyboard
@@ -300,13 +279,9 @@ ApplicationWindow {
                 height: parent.height - Theme.titleBar - 4 - (Theme.isGlass ? Theme.tabBarSpace : 24)
                 opacity: win.stageProgress * win.languageFade
                 scale: Theme.isGlass ? 0.965 + 0.035 * win.stageProgress : 1
-                transform: [
-                    Scale { origin.x: -content.x; origin.y: -content.y; xScale: win.morphSx; yScale: win.morphSy },
-                    Translate { x: win.morphDx; y: win.morphDy }
-                ]
                 PageFrame {
                     index: 0; current: win.currentPage
-                    ClickerPage { anchors.fill: parent; engine: clickEngine }
+                    ClickerPage { anchors.fill: parent; engine: clickEngine; windowSheet: windowSheet }
                 }
                 PageFrame {
                     index: 1; current: win.currentPage
@@ -369,14 +344,10 @@ ApplicationWindow {
             textureSize: Qt.size(Math.max(1, stage.width / 3), Math.max(1, stage.height / 3))
         }
 
-        // Everything above the stage. It shares the content's maximize/restore morph.
+        // Everything above the stage.
         Item {
             id: chrome
             anchors.fill: parent
-            transform: [
-                Scale { xScale: win.morphSx; yScale: win.morphSy },
-                Translate { x: win.morphDx; y: win.morphDy }
-            ]
             // Navigation: a floating glass tab bar, or an iOS 14 sidebar.
             ClassicSidebar {
                 id: sidebar
@@ -419,7 +390,7 @@ ApplicationWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Theme.isGlass ? 8 : 2
                     opacity: win.span(win.reveal, 0.45, 0.4)
-                    AppButton { kind: Theme.isGlass ? "normal" : "plain"; compact: true; width: 34; height: 34; iconName: "winMin"; iconSize: 16; Accessible.name: I18n.t("win.minimize"); onClicked: win.minimizeAnimated() }
+                    AppButton { kind: Theme.isGlass ? "normal" : "plain"; compact: true; width: 34; height: 34; iconName: "winMin"; iconSize: 16; Accessible.name: I18n.t("win.minimize"); onClicked: win.minimizeWindow() }
                     AppButton { objectName: "maximizeButton"; kind: Theme.isGlass ? "normal" : "plain"; compact: true; width: 34; height: 34; iconName: win.maximized ? "winRestore" : "winMax"; iconSize: 16; Accessible.name: I18n.t(win.maximized ? "win.restore" : "win.maximize"); onClicked: win.toggleMaximized() }
                     AppButton {
                         objectName: "closeButton"

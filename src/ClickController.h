@@ -47,6 +47,9 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     // state: "idle" | "arming" | "running" | "stopping"; error: message code, translated in QML.
     Q_PROPERTY(QString state READ state NOTIFY changed)
     Q_PROPERTY(QString error READ error NOTIFY changed)
+    // Chosen window (HWND as a decimal string), empty for "whatever is in front". Session only.
+    Q_PROPERTY(QString targetWindow READ targetWindow NOTIFY changed)
+    Q_PROPERTY(QString targetTitle READ targetTitle NOTIFY changed)
   public:
     explicit ClickController(QObject *parent = nullptr);
     ~ClickController() override;
@@ -119,6 +122,9 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     void presentForCapture(const QString &state, qulonglong clicks, double measured, int countdown,
                            const QString &error = {});
     void enableForCapture() { m_available = true; emit changed(); }
+    QString targetWindow() const { return m_targetWindow; }
+    QString targetTitle() const { return m_targetTitle; }
+    Q_INVOKABLE void setTarget(const QString &id, const QString &title);
     bool eventFilter(QObject *object, QEvent *event) override;
     bool nativeEventFilter(const QByteArray &, void *, qintptr *) override;
   signals:
@@ -150,6 +156,9 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     QFuture<void> m_task;
     ClickConfig m_config;
     std::atomic_bool m_cancel{false};
+    QString m_targetWindow, m_targetTitle;
+    std::atomic<quintptr> m_targetHandle{0};
+    void activateTarget();
     std::atomic<qulonglong> m_clicks{0}, m_skipped{0};
     std::atomic<qint64> m_beginNs{0}, m_endNs{0}, m_maxLateNs{0};
     QQueue<QPair<qint64, quint64>> m_samples;

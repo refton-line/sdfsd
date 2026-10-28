@@ -18,7 +18,7 @@ practically tops out around ~1000 CPS. Uncapped throughput is a Blatant feature.
 ## Interface
 Two materials, and switching between them changes the whole app. The new look washes over the old one in a circle that grows from the pointer and has a bright liquid front. Labels are kept to names and values; there are no hint or subtitle lines.
 
-**Logo and launch.** The mark is a five-point star split down the middle: the left half is Liquid Glass that refracts what is behind it, the right half is plain ink. The app icon uses the same split, with a frosted-glass | white tile. Launch starts softly: the plain window warms up into the wallpaper while the star fades in and its ink half fills from the bottom up; then it flies into the title bar (glass) or the sidebar (solid) and stays there as the logo. Closing plays the same story backwards (the star returns to the centre, drains and fades). Minimize sinks the UI toward the taskbar; maximize and restore grow or shrink the UI from where the window was.
+**Logo and launch.** The mark is a five-point star split down the middle: the left half is Liquid Glass that refracts what is behind it, the right half is plain ink. The app icon uses the same split, with a frosted-glass | white tile. Launch starts softly: the plain window warms up into the wallpaper while the star fades in and its ink half fills from the bottom up; then it flies into the title bar (glass) or the sidebar (solid) and stays there as the logo. Closing plays the same story backwards (the star returns to the centre, drains and fades). Minimize, maximize, restore and Snap are the standard Windows animations.
 
 | | **Liquid Glass** (iOS 26/27) | **Solid** (iOS 14) |
 |---|---|---|
@@ -31,6 +31,10 @@ Two materials, and switching between them changes the whole app. The new look wa
 - Compact views: mode and target CPS, countdown ring, live waveform with measured CPS, notices, errors, run summary.
 - **Hover expands it at once** (a click pins it, Esc unpins it) into a control panel: Legit/Blatant switch, a large CPS readout with −/+, live clicks and time, and a big Start/Cancel/Stop button.
 - **Island over other windows:** while you click in another app, a copy sits at the top of the screen. It never takes focus or mouse input. Windows does not let it sample the desktop behind it, so there it is drawn as lit smoked glass without refraction.
+
+**Target window.** The button above Start opens a window picker with live thumbnails (like choosing a window to share on Discord). With a window chosen, Start brings it to the front, clicks only while it stays in front, and the island over other windows sits at the top of that window. "Any window" keeps the old behaviour: whatever is in front when the countdown ends.
+
+**Island notices.** Every real change shows up in the island: CPS, button, variance, hold, limits, countdown, shortcuts, target window, overlay, mode, language and material. Hover expands it; it collapses as soon as the pointer leaves, also after a click.
 
 **Language:** English (default) or Русский.
 

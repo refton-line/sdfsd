@@ -3,6 +3,7 @@
 #include "ConfigStore.h"
 #include "StartupController.h"
 #include "WindowEffects.h"
+#include "WindowPicker.h"
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
@@ -34,7 +35,12 @@ int main(int argc, char *argv[]) {
     ClickController clicks;
     ConfigStore configs(&clicks);
     WindowEffects effects;
+    WindowPicker picker;
+    if (app.arguments().contains("--capture"))
+        picker.presentForCapture();
     QQmlApplicationEngine engine;
+    engine.addImageProvider("windows", new WindowThumbnails(&picker));
+    engine.rootContext()->setContextProperty("windowPicker", &picker);
     engine.rootContext()->setContextProperty("startup", &startup);
     engine.rootContext()->setContextProperty("configs", &configs);
     engine.rootContext()->setContextProperty("clickEngine", &clicks);
@@ -57,6 +63,7 @@ int main(int argc, char *argv[]) {
     win->setPosition(workArea.topLeft() + QPoint((workArea.width() - win->width()) / 2,
                                                 (workArea.height() - win->height()) / 2));
     effects.roundCorners(win);
+    effects.enableNativeFrame(win);
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &clicks, &ClickController::stop);
     const int captureIndex = app.arguments().indexOf("--capture");
     if (captureIndex >= 0 && captureIndex + 1 < app.arguments().size())

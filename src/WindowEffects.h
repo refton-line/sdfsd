@@ -12,4 +12,13 @@ class WindowEffects final : public QObject {
     // Never take focus or mouse input, so the click target keeps foreground and cursor.
     Q_INVOKABLE void makePassive(QWindow *window);
     Q_INVOKABLE void roundCorners(QWindow *window);
+    // Give the frameless window a real (invisible) frame so Windows animates minimize, maximize,
+    // restore and Snap like any other window.
+    void enableNativeFrame(QWindow *window);
+    // Standard window commands with the system animations; false when unavailable (not Windows).
+    Q_INVOKABLE bool minimize(QWindow *window);
+    Q_INVOKABLE bool toggleMaximize(QWindow *window);
+
+  private:
+    bool m_nativeFrame = false;
 };

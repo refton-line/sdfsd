@@ -56,13 +56,20 @@ int waitUntil(qint64 deadline, qint64 freq, HANDLE stop, HANDLE timer) {
 }
 struct LoopState {
     HANDLE stop;
+    HWND chosen;
     std::atomic_bool &cancel;
     std::atomic<qulonglong> &count, &skips;
     std::atomic<qint64> &maxLate;
 };
 QString loop(const ClickConfig &c, LoopState &state) {
-    auto &[stop, cancel, count, skips, maxLate] = state;
+    auto &[stop, chosen, cancel, count, skips, maxLate] = state;
     HWND target = GetForegroundWindow();
+    if (chosen) {
+        if (!IsWindow(chosen))
+            return "targetGone";
+        if (target != chosen)
+            return "targetNotFront";
+    }
     if (!target || ours(target))
         return "noTarget";
     LARGE_INTEGER f;
@@ -189,7 +196,8 @@ void ClickController::runWorker() {
     m_beginNs = Timing::nowNs();
     QString reason;
 #ifdef Q_OS_WIN
-    LoopState state{static_cast<HANDLE>(m_stopEvent), m_cancel, m_clicks, m_skipped, m_maxLateNs};
+    LoopState state{static_cast<HANDLE>(m_stopEvent), reinterpret_cast<HWND>(m_targetHandle.load()),
+                    m_cancel, m_clicks, m_skipped, m_maxLateNs};
     reason = loop(m_config, state);
 #else
     reason = "windowsOnly";

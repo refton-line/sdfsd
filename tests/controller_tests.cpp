@@ -69,6 +69,10 @@ int main(int argc, char **argv) {
     check(e.launchDelaySec() == e.defaultLaunchDelaySec() && e.defaultLaunchDelaySec() == 3,
           "countdown reset to default");
     check(e.startKey() == 0x75 && e.stopKey() == 0x77, "countdown reset keeps bindings");
+    e.setTarget("4242", "Game");
+    check(e.targetWindow() == "4242" && e.targetTitle() == "Game", "target window chosen");
+    e.setTarget("", "ignored");
+    check(e.targetWindow().isEmpty() && e.targetTitle().isEmpty(), "target cleared to any window");
     check(e.clicks() == 0 && e.measuredCps() < 0 && e.averageCps() < 0,
           "no fabricated measured rate");
     e.setMode(1);

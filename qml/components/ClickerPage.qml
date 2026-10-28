@@ -5,6 +5,7 @@ import LightClicker
 Item {
     id: page
     property var engine
+    property var windowSheet
     readonly property bool locked: engine.active
     readonly property bool blatant: engine.mode === 1
     readonly property var presets: blatant ? [20, 50, 100, 250, 500, 1000] : [8, 10, 12, 14, 16, 20]
@@ -547,6 +548,49 @@ Item {
                 iconName: "x"; iconSize: 13
                 Accessible.name: I18n.t("dismiss")
                 onClicked: page.engine.dismissError()
+            }
+        }
+        // Target window: opens the window picker.
+        T.AbstractButton {
+            id: targetButton
+            objectName: "targetButton"
+            x: 12; width: parent.width - 24; height: 46
+            anchors.bottom: startButton.top; anchors.bottomMargin: 10
+            hoverEnabled: true
+            focusPolicy: Qt.StrongFocus
+            enabled: !page.locked
+            opacity: enabled ? 1 : 0.5
+            Accessible.name: I18n.t("target") + ": " + (page.engine.targetWindow === "" ? I18n.t("target.any") : page.engine.targetTitle)
+            onClicked: if (page.windowSheet) page.windowSheet.choose()
+            scale: Theme.isGlass && pressed ? 0.97 : 1
+            Behavior on scale { SpringAnimation { spring: 5; damping: 0.3; epsilon: 0.001 } }
+            background: Item {
+                Fill {
+                    anchors.fill: parent
+                    radius: Theme.isGlass ? height / 2 : 10
+                    inset: !targetButton.hovered
+                    color: Theme.isGlass ? (targetButton.hovered ? Qt.rgba(1, 1, 1, 0.6) : Theme.well)
+                                         : (targetButton.hovered ? Theme.fillStrong : Theme.fill)
+                }
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: -3
+                    radius: Theme.isGlass ? height / 2 : 13
+                    color: "transparent"
+                    visible: targetButton.visualFocus
+                    border.width: 2; border.color: Theme.focusRing
+                }
+            }
+            contentItem: Item {
+                Icon { id: targetIcon; x: 16; anchors.verticalCenter: parent.verticalCenter; name: "target"; size: 18; color: Theme.isGlass ? Theme.ink : "#007aff" }
+                Label {
+                    anchors.left: targetIcon.right; anchors.leftMargin: 10
+                    anchors.right: targetChevron.left; anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: page.engine.targetWindow === "" ? I18n.t("target.any") : page.engine.targetTitle
+                    elide: Text.ElideRight
+                    font.pixelSize: 14; font.weight: Font.DemiBold
+                }
+                Icon { id: targetChevron; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; name: "chevron"; size: 14; color: Theme.muted }
             }
         }
         // Start / countdown / stop

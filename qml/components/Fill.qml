@@ -11,7 +11,7 @@ Item {
     property bool inset: false
     property bool floating: false
     property bool detached: false
-    property real strength: 0.74          // tint alpha used for opaque colours
+    property real strength: 0.86          // tint alpha used for opaque colours
     property real frost: 1
     property real magnify: 0
 
@@ -26,7 +26,9 @@ Item {
             frost: fill.frost
             magnify: fill.magnify
             rim: fill.inset ? 0.4 : 0.85
-            dispersion: fill.inset ? 0.5 : 1.2
+            // Small coloured pieces (badges, chips) bend little and do not split colour.
+            dispersion: fill.inset || fill.color.a > 0.98 ? 0 : 0.8
+            refraction: Math.min(fill.inset ? 6 : 12, Math.min(width, height) * 0.18)
             tintColor: Qt.rgba(fill.color.r, fill.color.g, fill.color.b,
                                fill.color.a > 0.98 ? fill.strength
                                : fill.color.a < 0.3 ? fill.color.a * (fill.inset ? 1.0 : 2.0) : fill.color.a)

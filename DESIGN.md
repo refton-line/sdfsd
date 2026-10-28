@@ -52,8 +52,7 @@ bright liquid band that bends the old image outward as it passes.
 - Continuous effects (island waveform, countdown ring, pulse, tab-bar lens speed) are evaluated every frame from a running clock rather than as looping keyframes, so they never visibly stop or step.
 - Launch: nothing snaps at the start. The plain window warms up into the wallpaper while the star fades and grows in (720 ms, in-out sine); its ink half fills from the bottom up, paced so it never jumps. The star then flies (860 ms, in-out cubic) into the title bar or the sidebar and becomes the logo. The island grows out of the title bar half-way, and navigation, content and controls follow in a stagger where every part eases in and out on its own (smoothstep over an in-out cubic).
 - Close mirrors the launch. Input stops first. The UI folds away in reverse order, the island collapses, the star flies back to the centre, its ink drains from the top, then the star and the wallpaper fade into the plain window, which closes (about 0.9 s).
-- Minimize: the UI sinks toward the taskbar and fades (300 ms) while the star stays, so the taskbar preview shows the logo; the window then minimizes. When it comes back, the UI rises into place again.
-- Maximize and restore: the UI is laid out for the new size at once but starts drawn where the old window was, then grows (or shrinks) into place (440 ms) over the wallpaper, which fills the new size immediately.
+- Minimize, maximize, restore and Snap are the system animations: `WindowEffects::enableNativeFrame` gives the frameless window an invisible caption and thick frame (`WM_NCCALCSIZE` hands the whole window to the client, and a maximized window is fitted to the work area), and the title-bar buttons call `ShowWindow`.
 
 ## Dynamic Island
 One capsule (`DynamicIsland.qml`), smoked Liquid Glass on glass and black on solid, on springs (`spring 3.3, damping 0.25`) with a

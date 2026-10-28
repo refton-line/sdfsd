@@ -156,22 +156,22 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
         call("setLanguage", "en");
     });
     add(35000, [=] {
-        QMetaObject::invokeMethod(win, "toggleMaximized");
-        burst("31-maximize", {90, 220, 700});
+        page(0);
+        if (auto *sheet = findObject(win, "windowSheet"))
+            QMetaObject::invokeMethod(sheet, "choose");
     });
-    add(36500, [=] {
-        QMetaObject::invokeMethod(win, "toggleMaximized");
-        burst("32-restore", {90, 220, 700});
+    add(36200, [=] { shot("31-window-picker"); });
+    add(36300, [=] {
+        engine->setTarget("1001", "osu!");
+        if (auto *sheet = findObject(win, "windowSheet"))
+            QMetaObject::invokeMethod(sheet, "close");
     });
-    add(38000, [=] {
-        QMetaObject::invokeMethod(win, "minimizeAnimated");
-        burst("33-minimize", {100, 220});
-    });
-    add(39500, [=] {
-        win->showNormal();
-        win->requestActivate();
-        burst("34-unminimize", {150, 350, 900});
-    });
+    add(37000, [=] { shot("32-target-chosen"); });
+    add(37200, [=] { if (auto *item = findObject(win, "island")) item->setProperty("pinned", true); });
+    add(38000, [=] { shot("33-island-expanded"); });
+    add(38100, [=] { if (auto *item = findObject(win, "island")) item->setProperty("pinned", false); engine->setHoldMs(0); engine->setMouseButton(1); });
+    add(38500, [=] { shot("34-island-setting-notice"); });
+    add(39000, [=] { engine->setMouseButton(0); engine->setTarget("", ""); });
     add(41000, [=] {
         win->close();
         burst("35-closing", {120, 300, 520, 700, 820});

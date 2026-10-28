@@ -209,6 +209,7 @@ void ClickController::start() {
     m_active = true;
     m_countdown = m_config.launchDelay;
     m_state = "arming";
+    activateTarget();
     m_cancel = false;
 #ifdef Q_OS_WIN
     ResetEvent(m_stopEvent);
@@ -216,9 +217,30 @@ void ClickController::start() {
     m_countdownTimer.start();
     emit changed();
 }
+void ClickController::setTarget(const QString &id, const QString &title) {
+    if (m_active)
+        return;
+    m_targetWindow = id;
+    m_targetTitle = id.isEmpty() ? QString() : title;
+    m_targetHandle = quintptr(id.toULongLong());
+    emit changed();
+}
+// Bring the chosen window forward: at Start (this app is in front, so Windows allows it) and again
+// when the countdown ends.
+void ClickController::activateTarget() {
+#ifdef Q_OS_WIN
+    const HWND w = reinterpret_cast<HWND>(m_targetHandle.load());
+    if (!w || !IsWindow(w))
+        return;
+    if (IsIconic(w))
+        ShowWindow(w, SW_RESTORE);
+    SetForegroundWindow(w);
+#endif
+}
 void ClickController::launch() {
     if (!m_active)
         return;
+    activateTarget();
     m_state = "running";
     m_poll.start();
     m_task = QtConcurrent::run([this] { runWorker(); });

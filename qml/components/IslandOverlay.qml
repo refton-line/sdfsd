@@ -17,11 +17,24 @@ Window {
     visible: false
     title: "Light clicker island"
 
+    // Top centre of the chosen window when there is one, otherwise of the screen.
     function place() {
+        const target = engine && engine.targetWindow !== "" ? windowPicker.windowRect(engine.targetWindow) : Qt.rect(0, 0, 0, 0);
+        if (target.width > 0) {
+            x = Math.round(target.x + (target.width - width) / 2);
+            y = target.y + 10;
+            return;
+        }
         const s = overlay.screen;
         if (!s) return;
         x = s.virtualX + (s.width - width) / 2;
         y = s.virtualY + 10;
+    }
+    Timer {
+        // Follow the chosen window while it moves.
+        interval: 250; repeat: true
+        running: overlay.visible && overlay.wanted && overlay.engine && overlay.engine.targetWindow !== ""
+        onTriggered: overlay.place()
     }
     function updateMask() {
         windowEffects.setRoundedMask(overlay, island.x, island.y, island.width, island.height, Math.min(island.height / 2, 34));

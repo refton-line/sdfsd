@@ -121,14 +121,18 @@ Item {
     }
 
     HoverHandler { id: hover; enabled: island.interactive }
+    // A click only clears transient views; the panel follows the pointer and collapses when it
+    // leaves, even after a click. `pinned` is kept for scripted tours.
     TapHandler {
         enabled: island.interactive
         onTapped: {
-            if (island.view === "expanded" && island.pinned) island.pinned = false;
-            else island.pinned = true;
             island.errorText = "";
             island.summaryShown = false;
         }
+    }
+    Connections {
+        target: hover
+        function onHoveredChanged() { if (!hover.hovered) island.pinned = false; }
     }
     onInteractiveChanged: if (!interactive) pinned = false
 
@@ -139,7 +143,8 @@ Item {
         anchors.fill: parent
         radius: Math.min(height / 2, 36)
         color: Theme.island
-        strength: 0.86
+        // Dense smoke: page content must not ghost through the panel text.
+        strength: 0.95
         floating: true
         detached: island.overlay
     }
