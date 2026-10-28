@@ -12,15 +12,16 @@ bool validKey(int k) {
            QList<int>{8, 9, 13, 19, 20, 27, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 45, 46, 144, 145}
                .contains(k);
 }
+bool validCps(double cps) { return std::isfinite(cps) && cps >= MinCps && cps <= MaxCps; }
 QString bindingError(int k, int m, int t, int n) {
     if (!validKey(k) || !validKey(t) || m < 0 || m > 7 || n < 0 || n > 7)
-        return "Эта клавиша не поддерживается. F12 и системные клавиши зарезервированы.";
+        return "unsupportedKey";
     if (k == t && m == n)
-        return "Запуск и остановка должны иметь разные сочетания.";
+        return "sameStartStop";
     for (auto b : {qMakePair(k, m), qMakePair(t, n)}) {
         if ((b.first == 46 && (b.second & 3) == 3) || (b.first == 9 && (b.second & 2)) ||
             (b.first == 27 && (b.second & 3)))
-            return "Сочетание зарезервировано Windows. Выберите другое.";
+            return "reserved";
     }
     return {};
 }
@@ -30,12 +31,16 @@ QList<KeyBinding> bindings(const ClickConfig &c, bool stop) {
     return list;
 }
 QString validate(const ClickConfig &c) {
-    if (c.interval < 5 || c.interval > 10000 || c.duration < 0 || c.duration > 3600 ||
-        c.button < 0 || c.button > 2 || c.hold < 0 || c.hold > 100 || c.hold >= c.interval ||
-        c.countLimit > 1000000000ULL || c.launchDelay < 1 || c.launchDelay > 10)
-        return "Параметры вне диапазона. Удержание должно быть короче интервала.";
+    if (c.mode < 0 || c.mode > 1 || c.variance < 0 || c.variance > 2 || !validCps(c.cps) ||
+        c.duration < 0 || c.duration > MaxDurationSec || c.button < 0 || c.button > 2 ||
+        c.hold < 0 || c.hold > MaxHoldMs || c.countLimit > MaxCountLimit || c.launchDelay < 1 ||
+        c.launchDelay > 10)
+        return "outOfRange";
+    // A Blatant press must be released before the next slot; Legit derives hold per click.
+    if (c.mode == int(ClickMode::Blatant) && c.hold > 0 && double(c.hold) * 1e6 >= 1e9 / c.cps)
+        return "holdTooLong";
     if (c.startExtra.size() > 7 || c.stopExtra.size() > 7)
-        return "Не больше восьми назначений на действие.";
+        return "tooManyBindings";
     QList<KeyBinding> used;
     for (bool stop : {false, true})
         for (const auto &binding : bindings(c, stop)) {
@@ -46,15 +51,15 @@ QString validate(const ClickConfig &c) {
                 // Explicit opposite chords are validated independently below.
                 if (!error.isEmpty() && (stop ? c.startChord : c.stopChord).isEmpty()) return error;
                 if (!validKey(binding.key) || binding.mods < 0 || binding.mods > 7)
-                    return "Некорректное прежнее назначение.";
+                    return "legacyBinding";
             } else if (keys.size() < 1 || keys.size() > 3) {
-                return "В сочетании — от одной до трёх клавиш.";
+                return "chordSize";
             }
             QSet<int> unique;
             bool ctrl = false, alt = false, shift = false;
             for (int key : keys) {
                 if ((!validChordKey(key) && !(binding.keys.isEmpty() && key >= 16 && key <= 18)) || unique.contains(key))
-                    return "Неподдерживаемая или повторяющаяся клавиша.";
+                    return "badKey";
                 unique.insert(key);
                 ctrl |= key == 17 || key == 162 || key == 163;
                 alt |= key == 18 || key == 164 || key == 165;
@@ -63,7 +68,7 @@ QString validate(const ClickConfig &c) {
             if ((ctrl && alt && unique.contains(46)) || (alt && unique.contains(9)) ||
                 ((ctrl || alt) && unique.contains(27)) || (alt && unique.contains(115)) ||
                 (ctrl && shift && unique.contains(27)))
-                return "Сочетание зарезервировано Windows. Выберите другое.";
+                return "reserved";
             // Reject subset/side-generic overlaps: a smaller chord would fire before the larger one.
             auto covers = [](const QList<int> &a, const QList<int> &b) {
                 for (int k : a) {
@@ -78,113 +83,191 @@ QString validate(const ClickConfig &c) {
             for (const auto &other : used) {
                 const auto previous = chordKeys(other);
                 if (covers(keys, previous) || covers(previous, keys))
-                    return "Сочетание уже назначено или пересекается с более коротким.";
+                    return "overlap";
             }
             used.append(binding);
         }
     return {};
 }
-QJsonObject encode(const ClickConfig &c) {
-    auto array = [](const QList<KeyBinding> &list) {
-        QJsonArray a;
-        for (auto b : list)
-            {
-                QJsonObject item{{"key", b.key}, {"mods", b.mods}};
-                if (!b.keys.isEmpty()) { QJsonArray keys; for (int key : b.keys) keys.append(key); item["keys"] = keys; }
-                a.append(item);
+namespace {
+QJsonArray bindingArray(const QList<KeyBinding> &list) {
+    QJsonArray a;
+    for (const auto &b : list) {
+        QJsonObject item{{"key", b.key}, {"mods", b.mods}};
+        if (!b.keys.isEmpty()) {
+            QJsonArray keys;
+            for (int key : b.keys) keys.append(key);
+            item["keys"] = keys;
+        }
+        a.append(item);
+    }
+    return a;
+}
+bool wholeNumber(const QJsonValue &v, double max) {
+    return v.isDouble() && std::isfinite(v.toDouble()) && std::floor(v.toDouble()) == v.toDouble() &&
+           v.toDouble() >= 0 && v.toDouble() <= max;
+}
+bool readKeys(const QJsonValue &value, QList<int> &keys, bool emptyAllowed) {
+    if (!value.isArray() || value.toArray().size() > 3 || (!emptyAllowed && value.toArray().isEmpty())) return false;
+    for (const auto &v : value.toArray()) {
+        if (!v.isDouble() || v.toDouble() != v.toInt() || !validChordKey(v.toInt()) || keys.contains(v.toInt())) return false;
+        keys.append(v.toInt());
+    }
+    return true;
+}
+// Shared by v2/v3 (legacy) and v4: launch delay, alternative bindings and optional explicit chords.
+bool readBindings(const QJsonObject &o, bool chords, ClickConfig &c, QString &error) {
+    const auto d = o["launchDelaySec"];
+    if (!d.isDouble() || d.toDouble() != d.toInt() || d.toInt() < 1 || d.toInt() > 10) {
+        error = "badDelay";
+        return false;
+    }
+    c.launchDelay = d.toInt();
+    for (bool stop : {false, true}) {
+        const auto value = o[stop ? "stopExtra" : "startExtra"];
+        if (!value.isArray() || value.toArray().size() > 7) {
+            error = "badBindingList";
+            return false;
+        }
+        auto &list = stop ? c.stopExtra : c.startExtra;
+        for (auto entry : value.toArray()) {
+            const auto b = entry.toObject();
+            if (!entry.isObject() || (b.size() != 2 && b.size() != 3) || !b["key"].isDouble() ||
+                !b["mods"].isDouble() || b["key"].toDouble() != b["key"].toInt() ||
+                b["mods"].toDouble() != b["mods"].toInt()) {
+                error = "badBinding";
+                return false;
             }
-        return a;
-    };
-    QJsonObject result{{"intervalMs", c.interval},
-            {"durationSec", c.duration},
-            {"mouseButton", c.button},
-            {"holdMs", c.hold},
-            {"countLimit", double(c.countLimit)},
-            {"startKey", c.startKey},
-            {"startMods", c.startMods},
-            {"stopKey", c.stopKey},
-            {"stopMods", c.stopMods},
-            {"launchDelaySec", c.launchDelay},
-            {"startExtra", array(c.startExtra)},
-            {"stopExtra", array(c.stopExtra)}};
+            KeyBinding binding{b["key"].toInt(), b["mods"].toInt()};
+            if (b.size() == 3 && (!chords || !readKeys(b["keys"], binding.keys, false))) {
+                error = "badKeySet";
+                return false;
+            }
+            list.append(binding);
+        }
+    }
+    if (chords && (!readKeys(o["startChord"], c.startChord, true) || !readKeys(o["stopChord"], c.stopChord, true))) {
+        error = "badKeySet";
+        return false;
+    }
+    return true;
+}
+bool decodeLegacy(const QJsonObject &o, ClickConfig &c, QString &error) {
+    const QStringList fields = {"intervalMs", "durationSec", "mouseButton", "holdMs",  "countLimit",
+                                "startKey",   "startMods",   "stopKey",     "stopMods"};
+    if (o.size() != fields.size() && o.size() != fields.size() + 3 && o.size() != fields.size() + 5) {
+        error = "schema";
+        return false;
+    }
+    QStringList allowed = fields;
+    if (o.size() >= 12) allowed << "launchDelaySec" << "startExtra" << "stopExtra";
+    if (o.size() == 14) allowed << "startChord" << "stopChord";
+    for (const auto &key : o.keys())
+        if (!allowed.contains(key)) {
+            error = "unknownField:" + key;
+            return false;
+        }
+    for (const auto &k : fields)
+        if (!wholeNumber(o[k], 1000000000)) {
+            error = "notInteger:" + k;
+            return false;
+        }
+    const int interval = o["intervalMs"].toInt(), hold = o["holdMs"].toInt();
+    // Earlier releases accepted 5–10000 ms with hold 0–100 ms shorter than the interval.
+    if (interval < 5 || interval > 10000 || hold > 100 || hold >= interval) {
+        error = "outOfRange";
+        return false;
+    }
+    // Legacy profiles always clicked on an exact grid, which is Blatant mode now.
+    c.mode = int(ClickMode::Blatant);
+    c.cps = 1000.0 / interval;
+    c.hold = hold;
+    c.duration = o["durationSec"].toInt();
+    c.button = o["mouseButton"].toInt();
+    c.countLimit = quint64(o["countLimit"].toDouble());
+    c.startKey = o["startKey"].toInt();
+    c.startMods = o["startMods"].toInt();
+    c.stopKey = o["stopKey"].toInt();
+    c.stopMods = o["stopMods"].toInt();
+    return o.size() < 12 || readBindings(o, o.size() == 14, c, error);
+}
+} // namespace
+QJsonObject encode(const ClickConfig &c) {
+    QJsonObject result{{"mode", c.mode == int(ClickMode::Blatant) ? "blatant" : "legit"},
+                       {"cps", c.cps},
+                       {"variance", c.variance},
+                       {"holdMs", c.hold},
+                       {"durationSec", c.duration},
+                       {"mouseButton", c.button},
+                       {"countLimit", double(c.countLimit)},
+                       {"startKey", c.startKey},
+                       {"startMods", c.startMods},
+                       {"stopKey", c.stopKey},
+                       {"stopMods", c.stopMods},
+                       {"launchDelaySec", c.launchDelay},
+                       {"startExtra", bindingArray(c.startExtra)},
+                       {"stopExtra", bindingArray(c.stopExtra)}};
     bool explicitChord = !c.startChord.isEmpty() || !c.stopChord.isEmpty();
     for (const auto &b : c.startExtra + c.stopExtra) explicitChord |= !b.keys.isEmpty();
     if (explicitChord) {
         QJsonArray start, stop;
         for (int k : c.startChord) start.append(k);
         for (int k : c.stopChord) stop.append(k);
-        result["startChord"] = start; result["stopChord"] = stop;
+        result["startChord"] = start;
+        result["stopChord"] = stop;
     }
     return result;
 }
 bool decode(const QJsonObject &o, ClickConfig &out, QString &error) {
-    const QStringList fields = {"intervalMs", "durationSec", "mouseButton", "holdMs",  "countLimit",
-                                "startKey",   "startMods",   "stopKey",     "stopMods"};
-    if (o.size() != fields.size() && o.size() != fields.size() + 3 && o.size() != fields.size() + 5) {
-        error = "Неполная или неизвестная схема параметров.";
-        return false;
-    }
-    QStringList allowed = fields;
-    if (o.size() >= 12) allowed << "launchDelaySec" << "startExtra" << "stopExtra";
-    if (o.size() == 14) allowed << "startChord" << "stopChord";
-    for (const auto &key : o.keys()) if (!allowed.contains(key)) { error = "Неизвестный параметр: " + key; return false; }
-    auto readKeys = [&](const QJsonValue &value, QList<int> &keys, bool emptyAllowed) {
-        if (!value.isArray() || value.toArray().size() > 3 || (!emptyAllowed && value.toArray().isEmpty())) return false;
-        for (const auto &v : value.toArray()) {
-            if (!v.isDouble() || v.toDouble() != v.toInt() || !validChordKey(v.toInt()) || keys.contains(v.toInt())) return false;
-            keys.append(v.toInt());
-        }
-        return true;
-    };
-    for (const auto &k : fields)
-        if (!o[k].isDouble() || !std::isfinite(o[k].toDouble()) ||
-            std::floor(o[k].toDouble()) != o[k].toDouble() || o[k].toDouble() < 0 ||
-            o[k].toDouble() > 1000000000) {
-            error = "Параметр должен быть целым числом: " + k;
-            return false;
-        }
     ClickConfig c;
-    c.interval = o["intervalMs"].toInt();
-    c.duration = o["durationSec"].toInt();
-    c.button = o["mouseButton"].toInt();
-    c.hold = o["holdMs"].toInt();
-    c.countLimit = quint64(o["countLimit"].toDouble());
-    c.startKey = o["startKey"].toInt();
-    c.startMods = o["startMods"].toInt();
-    c.stopKey = o["stopKey"].toInt();
-    c.stopMods = o["stopMods"].toInt();
-    if (o.size() >= 12) {
-        const auto d = o["launchDelaySec"];
-        if (!d.isDouble() || d.toDouble() != d.toInt() || d.toInt() < 1 || d.toInt() > 10) {
-            error = "Отсчёт должен быть от 1 до 10 секунд.";
+    c.startExtra.clear();
+    c.stopExtra.clear();
+    if (o.contains("intervalMs")) {
+        if (!decodeLegacy(o, c, error))
+            return false;
+    } else {
+        static const QStringList fields = {"mode",       "cps",         "variance",  "holdMs",
+                                           "durationSec", "mouseButton", "countLimit", "startKey",
+                                           "startMods",  "stopKey",     "stopMods",  "launchDelaySec",
+                                           "startExtra", "stopExtra"};
+        const bool chords = o.contains("startChord") || o.contains("stopChord");
+        if (o.size() != fields.size() + (chords ? 2 : 0)) {
+            error = "schema";
             return false;
         }
-        c.launchDelay = d.toInt();
-        for (bool stop : {false, true}) {
-            const auto value = o[stop ? "stopExtra" : "startExtra"];
-            if (!value.isArray() || value.toArray().size() > 7) {
-                error = "Некорректный список назначений.";
+        for (const auto &key : o.keys())
+            if (!fields.contains(key) && key != "startChord" && key != "stopChord") {
+                error = "unknownField:" + key;
                 return false;
             }
-            auto &list = stop ? c.stopExtra : c.startExtra;
-            for (auto entry : value.toArray()) {
-                const auto b = entry.toObject();
-                if (!entry.isObject() || (b.size() != 2 && b.size() != 3) || !b["key"].isDouble() ||
-                    !b["mods"].isDouble() || b["key"].toDouble() != b["key"].toInt() ||
-                    b["mods"].toDouble() != b["mods"].toInt()) {
-                    error = "Некорректное назначение.";
-                    return false;
-                }
-                KeyBinding binding{b["key"].toInt(), b["mods"].toInt()};
-                if (b.size() == 3 && (o.size() != 14 || !readKeys(b["keys"], binding.keys, false))) {
-                    error = "Некорректный набор клавиш."; return false;
-                }
-                list.append(binding);
-            }
+        const auto mode = o["mode"].toString();
+        if (!o["mode"].isString() || (mode != "legit" && mode != "blatant")) {
+            error = "notInteger:mode";
+            return false;
         }
-    }
-    if (o.size() == 14 && (!readKeys(o["startChord"], c.startChord, true) || !readKeys(o["stopChord"], c.stopChord, true))) {
-        error = "Некорректный набор клавиш."; return false;
+        if (!o["cps"].isDouble() || !validCps(o["cps"].toDouble())) {
+            error = "notNumber:cps";
+            return false;
+        }
+        for (const auto &k : {"variance", "holdMs", "durationSec", "mouseButton", "countLimit",
+                              "startKey", "startMods", "stopKey", "stopMods"})
+            if (!wholeNumber(o[k], double(MaxCountLimit))) {
+                error = QString("notInteger:") + k;
+                return false;
+            }
+        c.mode = mode == "blatant" ? int(ClickMode::Blatant) : int(ClickMode::Legit);
+        c.cps = o["cps"].toDouble();
+        c.variance = qMin(o["variance"].toDouble(), 100.0);
+        c.hold = qMin(o["holdMs"].toDouble(), 1e6);
+        c.duration = qMin(o["durationSec"].toDouble(), 1e7);
+        c.button = qMin(o["mouseButton"].toDouble(), 100.0);
+        c.countLimit = quint64(o["countLimit"].toDouble());
+        c.startKey = qMin(o["startKey"].toDouble(), 1e6);
+        c.startMods = qMin(o["startMods"].toDouble(), 100.0);
+        c.stopKey = qMin(o["stopKey"].toDouble(), 1e6);
+        c.stopMods = qMin(o["stopMods"].toDouble(), 100.0);
+        if (!readBindings(o, chords, c, error))
+            return false;
     }
     error = validate(c);
     if (!error.isEmpty())

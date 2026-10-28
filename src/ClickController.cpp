@@ -1,11 +1,10 @@
 #include "ClickController.h"
 #include "Timing.h"
-#include <QClipboard>
-#include <QDateTime>
 #include <QGuiApplication>
 #include <QSettings>
 #include <QWindow>
 #include <QtConcurrent>
+#include <cmath>
 #ifdef Q_OS_WIN
 #define WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
@@ -22,9 +21,12 @@ ClickController::ClickController(QObject *parent) : QObject(parent) {
         if (Configuration::decode(s.value("click/config").toJsonObject(), loaded, error))
             m_config = loaded;
         else
-            m_error = "Сохранённые параметры отклонены: " + error;
-    } else {
-        m_config.interval = qBound(5, s.value("click/interval", 100).toInt(), 10000);
+            m_error = "savedRejected:" + error;
+    } else if (s.contains("click/interval")) {
+        // Pre-profile releases stored a fixed interval; that behaviour is Blatant mode now.
+        m_config.mode = int(ClickMode::Blatant);
+        m_config.cps = 1000.0 / qBound(5, s.value("click/interval", 100).toInt(), 10000);
+        m_config.hold = 1; // the fixed-interval engine always held for 1 ms
         m_config.duration = qBound(0, s.value("click/duration", 0).toInt(), 3600);
         m_config.button = qBound(0, s.value("click/button", 0).toInt(), 1);
         int f = s.value("click/key", 6).toInt();
@@ -35,7 +37,7 @@ ClickController::ClickController(QObject *parent) : QObject(parent) {
     m_stopEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     m_available = m_stopEvent && registerBindings(m_config);
     if (!m_available)
-        m_error = "Не удалось подключить ввод клавиатуры.";
+        m_error = "keyboardUnavailable";
     qGuiApp->installNativeEventFilter(this);
 #endif
     m_countdownTimer.setInterval(1000);
@@ -49,7 +51,6 @@ ClickController::ClickController(QObject *parent) : QObject(parent) {
     });
     m_poll.setInterval(100);
     connect(&m_poll, &QTimer::timeout, this, &ClickController::sample);
-    record("Приложение открыто");
 }
 ClickController::~ClickController() {
     qGuiApp->removeEventFilter(this);
@@ -68,7 +69,7 @@ void ClickController::persist() {
 }
 bool ClickController::applyConfig(const ClickConfig &c) {
     if (m_active) {
-        m_error = "Остановите клики перед изменением параметров.";
+        m_error = "stopFirst";
         emit changed();
         return false;
     }
@@ -89,7 +90,7 @@ bool ClickController::applyConfig(const ClickConfig &c) {
         if (!m_stopEvent || !registerBindings(c)) {
             unregisterBindings();
             m_available = !m_editing && m_stopEvent && registerBindings(m_config);
-            m_error = "Не удалось подключить ввод клавиатуры. Настройки не изменены.";
+            m_error = "keyboardUnavailable";
             emit changed();
             return false;
         }
@@ -113,11 +114,28 @@ void ClickController::setLaunchDelaySec(int v) {
     c.launchDelay = v;
     applyConfig(c);
 }
-void ClickController::setIntervalMs(int v) {
+void ClickController::fitHold(ClickConfig &c) {
+    if (c.mode != int(ClickMode::Blatant) || !Configuration::validCps(c.cps))
+        return;
+    const double periodMs = 1000.0 / c.cps;
+    if (c.hold >= periodMs)
+        c.hold = qMax(0, int(std::ceil(periodMs)) - 1);
+}
+void ClickController::setMode(int v) {
     auto c = m_config;
-    c.interval = v;
-    if (v >= 5 && v <= 10000)
-        c.hold = qMin(c.hold, v - 1);
+    c.mode = v;
+    fitHold(c);
+    applyConfig(c);
+}
+void ClickController::setCps(double v) {
+    auto c = m_config;
+    c.cps = v;
+    fitHold(c);
+    applyConfig(c);
+}
+void ClickController::setVariance(int v) {
+    auto c = m_config;
+    c.variance = v;
     applyConfig(c);
 }
 void ClickController::setDurationSec(int v) {
@@ -167,11 +185,6 @@ void ClickController::sample() {
     m_recentCps = Timing::rate(count - m_samples.head().second, now - m_samples.head().first);
     emit changed();
 }
-void ClickController::record(const QString &t) {
-    m_entries.prepend(QDateTime::currentDateTime().toString("HH:mm:ss") + "   " + t);
-    while (m_entries.size() > 100)
-        m_entries.removeLast();
-}
 void ClickController::setReady(bool v) {
     m_ready = v;
     emit changed();
@@ -195,23 +208,19 @@ void ClickController::start() {
     m_samples.clear();
     m_active = true;
     m_countdown = m_config.launchDelay;
-    m_delivery.meanNs = -1;
-    m_delivery.maxJitterNs = -1;
-    m_state = "Подготовка";
+    m_state = "arming";
     m_cancel = false;
 #ifdef Q_OS_WIN
     ResetEvent(m_stopEvent);
 #endif
-    record("Подготовка к запуску");
     m_countdownTimer.start();
     emit changed();
 }
 void ClickController::launch() {
     if (!m_active)
         return;
-    m_state = "Работает";
+    m_state = "running";
     m_poll.start();
-    record("Запуск: " + QString::number(m_config.interval) + " мс");
     m_task = QtConcurrent::run([this] { runWorker(); });
 }
 void ClickController::stop() {
@@ -225,30 +234,31 @@ void ClickController::stop() {
 #endif
     if (m_countdown > 0) {
         m_countdown = 0;
-        complete("Запуск отменён");
+        complete("cancelled");
         return;
     }
-    m_state = "Остановка";
+    m_state = "stopping";
     emit changed();
 }
 void ClickController::complete(const QString &reason) {
     m_poll.stop();
     sample();
     m_active = false;
-    m_state = "Готов";
-    if (!reason.isEmpty()) {
-        if (reason != "Запуск отменён")
-            m_error = reason;
-        record(reason);
-    }
-    record("Отправлено пар: " + QString::number(clicks()) +
-           " · Пропущено слотов: " + QString::number(skipped()));
+    m_state = "idle";
+    if (!reason.isEmpty() && reason != "cancelled")
+        m_error = reason;
     emit changed();
 }
-void ClickController::clearLog() {
-    m_entries.clear();
+void ClickController::presentForCapture(const QString &state, qulonglong clicks, double measured,
+                                        int countdown, const QString &error) {
+    m_state = state;
+    m_active = state != "idle";
+    m_clicks = clicks;
+    m_recentCps = measured;
+    m_countdown = countdown;
+    m_error = error;
+    if (state == "running" && !m_beginNs)
+        m_beginNs = Timing::nowNs() - qint64(clicks / qMax(1.0, measured) * 1e9);
+    m_endNs = state == "idle" ? Timing::nowNs() : 0;
     emit changed();
-}
-void ClickController::copyLog() {
-    QGuiApplication::clipboard()->setText(m_entries.join('\n'));
 }

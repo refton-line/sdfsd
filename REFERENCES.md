@@ -1,49 +1,19 @@
-# Design research: October 20, 2026
+# References — 0.5.0
 
-This is a curated working set, not a claim to have ranked all applications of 2025–2026. Product screenshots were inspected locally; links preserve their original attribution. No third-party application artwork is bundled in the release.
+## Used
+| Source | What was taken |
+|---|---|
+| [getdesign.md · Apple](https://getdesign.md/apple/design-md) (DESIGN.md via `npx getdesign add apple`) | Neutral palette: `#1d1d1f`, `#f5f5f7`, `#fafafc`, `#7a7a7a`, `#d2d2d7`@64%, `#0071e3`, `#272729`, `#000`; semibold headings, near-black primary pills |
+| [getdesign.md · Mobbin](https://getdesign.md/mobbin/design-md) | Monochrome ladder for fields and lines: `#f0f0f0`, `#e0e0e0`, `#adadad` |
+| [Apple: new software design (Liquid Glass), June 9, 2025](https://www.apple.com/newsroom/2025/06/apple-introduces-a-delightful-and-elegant-new-software-design/) | Glass that reflects and refracts what is under it; controls that come alive when pressed |
+| [WWDC25 · Meet Liquid Glass](https://developer.apple.com/videos/play/wwdc2025/219/) | Optical properties: specular rims, adaptive shadows, fluid morphing between states |
+| [Apple HIG · Live Activities](https://developer.apple.com/design/human-interface-guidelines/live-activities) and [WWDC23 · Design dynamic Live Activities](https://developer.apple.com/videos/play/wwdc2023/10194/) | Dynamic Island presentations (compact, expanded, transient alerts) and glanceable live data |
+| [Inter](https://rsms.me/inter/) 4.1 (OFL) | Bundled UI typeface |
 
-| Source | Material examined | Applied to C clicker | Rejected |
-|---|---|---|---|
-| [Linear: UI refresh, March 12, 2026](https://linear.app/changelog/2026-03-12-ui-refresh) | Official release and redrawn icon / header changes | Clear hierarchy and repeatable chrome | Turning a utility into an issue tracker |
-| [Linear: Behind the latest refresh](https://linear.app/now/behind-the-latest-design-refresh) | Actual before/after sidebar, tab and border comparisons; header construction diagrams | Quiet navigation, stronger work area, fewer competing borders | Low-contrast text and decorative colored icon backgrounds |
-| [Raycast Windows 2025 changelog](https://www.raycast.com/changelog/windows/5) | Hotkey recorder screenshot and release notes, including October 27, 2025; launch images separately identified as marketing | Readable recorded key combinations, clear apply/cancel | Launch graphics are not product UI; no confetti or red glow copied |
-| [Raycast Windows 2026 changelog](https://www.raycast.com/changelog/windows) | Theme-aware monochrome app icons and automatic contrast adjustments | Semantic foreground-based icon tinting on dark and light controls | One fixed SVG color for every button state |
-| [Zed: 2025 recap](https://zed.dev/2025) | Dark Git panel, debugger workspace and Windows screenshot | Operational density, mono numerals, purposeful panel division | IDE-level tool density in a single-purpose clicker |
-| [PowerToys Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview) | Actual animated application interface, inspected frame; keyboard-first and compact-mode behavior | Labeled command affordances and visible keyboard context | Platform-specific acrylic effects and giant search UI |
-| [Affinity: new features](https://www.affinity.studio/help/introduction-new-features/) | Official text describing monochrome iconography, cleaner tools and unified shortcuts; screenshot fetch was blocked by a browser-support page | One icon weight, progressive disclosure of limits | Copying a creative-suite layout; no claim of visual inspection of blocked images |
-| [Affinity: Studios](https://www.affinity.studio/help/workspace-about-studios/) | Workflow-scoped tool and panel explanation | Each destination has only the controls needed there | Exposing all advanced controls on the main screen |
+## Considered, not used
+- **iOS 14 widgets and cards.** This is the reference for the *Solid* material only: opaque white on `#f2f2f7`.
+- **Raycast, Linear, Spectra** (0.4.x references). These are dark, dense tool aesthetics, so they were dropped because the brief asks for grey-white glass.
+- **Real refraction shader.** Lensing the background at glass edges would need custom shaders compiled for every graphics API. The rim gradient, sheen and blur give the same impression at a fraction of the risk.
+- **System acrylic / Mica.** Windows backdrop materials do not compose reliably with Direct3D flip-model swap chains in a frameless window. The glass is rendered inside the window.
 
-## Attached examples and skills
-
-- Existing C clicker Beta 2 screenshots, QML, DESIGN.md and the supplied engine description were the product baseline. The two source ZIPs have identical sizes and duplicate contents; one working copy was edited.
-- The supplied `viora-design-skills` 4.2.0 and bundled artifact-design guidance were read and used. Native Qt build / image capture / QML theme audit replace web-only CSS and browser checks; a web checker alone does not verify this app.
-- IIOL is a gallery of 147+ experimental landing concepts, not a production desktop component library. Sample title/style metadata, including INK, was examined; it was not blindly imported into the click engine. Heavy fluid/background effects are intentionally excluded from the app.
-- Craft OS26 was explored as a research lead, but the live URL redirected to the general product homepage. It is not counted as a verified OS26 screenshot reference.
-
-## Darker palette follow-up
-
-User reference: [Spectra](https://getspectra.com/), inspected in its explicit Dark theme on October 20, 2026. Applied only the near-black neutral background and subtle surface steps, not the landing-page layout, pixel branding or dotted background. No Spectra assets are bundled.
-
-## Beta 4 — additional app-interface study
-
-Reviewed official product pages and their actual UI images, not only landing-page headlines:
-
-- [Raycast, new interface](https://www.raycast.com/new): compact command surfaces and inline shortcut hints. Inspected official look-and-feel image; did not copy glass, icons, logos or macOS chrome.
-- [Bear](https://bear.app/): strong separation of working regions, typography-first hierarchy and a quiet selected row. Inspected official Mac UI image. Kept C clicker's dark palette, not Bear's white editor or red branding.
-- [Things features](https://culturedcode.com/things/features/): progressive disclosure, quick-find selection and restrained grouping. Its illustrated Things 3 feature page contains historical imagery; this is not described as a 2026 redesign.
-- Existing [Linear UI research](https://linear.app/now/behind-the-latest-design-refresh) and the user's [Spectra dark reference](https://getspectra.com/) informed quiet structure and near-black neutral surfaces.
-
-Applied: cohesive segmented settings, fewer strong secondary-action outlines, an interval instrument well, measured session hierarchy and right-aligned dialog actions. No reference product images or assets are bundled in the app.
-
-## Red / Black variant
-User-pinned refinement: neutral black like the supplied Linear reference, with deep dark red accents only. The chosen hex values are original implementation tokens, not claimed exact Linear colors. No additional web research was needed for this palette-only pass.
-
-## 0.4.2 physical keyboard implementation
-- Microsoft RAWKEYBOARD structure: https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawkeyboard
-- Microsoft using Raw Input: https://learn.microsoft.com/en-us/windows/win32/inputdev/using-raw-input
-
-## 0.4.5 input validation note
-RAWKEYBOARD stores E0/E1 in Flags separately from MakeCode: https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawkeyboard . The decoder rejects high-bit/malformed scans instead of silently truncating them. SDL also explicitly skips the synthetic 0x21d Ctrl in its low-level hook (https://github.com/libsdl-org/SDL/blob/main/src/video/windows/SDL_windowsevents.c); that hook is not Raw Input and is not evidence that every layout/driver exposes the marker in RAWKEYBOARD. No global hook or timing-based AltGr guess was added to this application.
-
-### Qt AltGr editor bridge (0.4.7)
-QKeyEvent exposes key(), nativeVirtualKey() and nativeScanCode(): https://doc.qt.io/qt-6/qkeyevent.html . The bridge accepts explicit Qt::Key_AltGr; only on Windows it also interprets right-Alt native metadata. Raw Input remains the background source. Tests cover bridge/merge behavior, not every Windows layout/driver's real delivery.
+No third-party artwork is bundled.

@@ -9,6 +9,7 @@
 #include <QHash>
 class QWindow;
 #include <QTimer>
+#include <QStringList>
 #include <QVariantList>
 #include <atomic>
 class ClickController final : public QObject, public QAbstractNativeEventFilter {
@@ -21,12 +22,12 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     Q_PROPERTY(QVariantList startBindings READ startBindings NOTIFY changed)
     Q_PROPERTY(QVariantList stopBindings READ stopBindings NOTIFY changed)
     Q_PROPERTY(int launchDelaySec READ launchDelaySec WRITE setLaunchDelaySec NOTIFY changed)
-    Q_PROPERTY(double meanGapMs READ meanGapMs NOTIFY changed)
-    Q_PROPERTY(double maxJitterMs READ maxJitterMs NOTIFY changed)
-    Q_PROPERTY(int intervalMs READ intervalMs WRITE setIntervalMs NOTIFY changed)
+    Q_PROPERTY(int mode READ mode WRITE setMode NOTIFY changed)
+    Q_PROPERTY(double cps READ cps WRITE setCps NOTIFY changed)
+    Q_PROPERTY(int variance READ variance WRITE setVariance NOTIFY changed)
+    Q_PROPERTY(int holdMs READ holdMs WRITE setHoldMs NOTIFY changed)
     Q_PROPERTY(int durationSec READ durationSec WRITE setDurationSec NOTIFY changed)
     Q_PROPERTY(int mouseButton READ mouseButton WRITE setMouseButton NOTIFY changed)
-    Q_PROPERTY(int holdMs READ holdMs WRITE setHoldMs NOTIFY changed)
     Q_PROPERTY(qulonglong countLimit READ countLimit WRITE setCountLimit NOTIFY changed)
     Q_PROPERTY(int startKey READ startKey NOTIFY changed)
     Q_PROPERTY(int stopKey READ stopKey NOTIFY changed)
@@ -42,10 +43,9 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     Q_PROPERTY(double elapsedSec READ elapsedSec NOTIFY changed)
     Q_PROPERTY(double measuredCps READ measuredCps NOTIFY changed)
     Q_PROPERTY(double averageCps READ averageCps NOTIFY changed)
-    Q_PROPERTY(double maxLateMs READ maxLateMs NOTIFY changed)
+    // state: "idle" | "arming" | "running" | "stopping"; error: message code, translated in QML.
     Q_PROPERTY(QString state READ state NOTIFY changed)
     Q_PROPERTY(QString error READ error NOTIFY changed)
-    Q_PROPERTY(QStringList entries READ entries NOTIFY changed)
   public:
     explicit ClickController(QObject *parent = nullptr);
     ~ClickController() override;
@@ -68,15 +68,11 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     QVariantList stopBindings() const { return bindingList(true); }
     int launchDelaySec() const { return m_config.launchDelay; }
     void setLaunchDelaySec(int);
-    double meanGapMs() const {
-        return m_delivery.meanNs.load() < 0 ? -1 : m_delivery.meanNs.load() / 1e6;
-    }
-    double maxJitterMs() const {
-        return m_delivery.maxJitterNs.load() < 0 ? -1 : m_delivery.maxJitterNs.load() / 1e6;
-    }
     Q_INVOKABLE bool applyBindingSlot(bool stop, int index, int key, int mods);
     Q_INVOKABLE bool removeBinding(bool stop, int index);
-    int intervalMs() const { return m_config.interval; }
+    int mode() const { return m_config.mode; }
+    double cps() const { return m_config.cps; }
+    int variance() const { return m_config.variance; }
     int durationSec() const { return m_config.duration; }
     int mouseButton() const { return m_config.button; }
     int holdMs() const { return m_config.hold; }
@@ -98,8 +94,9 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     double maxLateMs() const { return m_maxLateNs.load() / 1e6; }
     QString state() const { return m_state; }
     QString error() const { return m_error; }
-    QStringList entries() const { return m_entries; }
-    void setIntervalMs(int);
+    void setMode(int);
+    void setCps(double);
+    void setVariance(int);
     void setDurationSec(int);
     void setMouseButton(int);
     void setHoldMs(int);
@@ -114,8 +111,10 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     Q_INVOKABLE void toggle();
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
-    Q_INVOKABLE void clearLog();
-    Q_INVOKABLE void copyLog();
+    // Screenshot harness only: shows a session state without sending input.
+    void presentForCapture(const QString &state, qulonglong clicks, double measured, int countdown,
+                           const QString &error = {});
+    void enableForCapture() { m_available = true; emit changed(); }
     bool eventFilter(QObject *object, QEvent *event) override;
     bool nativeEventFilter(const QByteArray &, void *, qintptr *) override;
   signals:
@@ -136,24 +135,23 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     bool m_numLockOn = true, m_captureCombination = false;
     void launch();
     void complete(const QString &);
-    void record(const QString &);
     void persist();
     void runWorker();
     void sample();
     bool registerBindings(const ClickConfig &);
     void unregisterBindings();
+    // Keeps a Blatant hold shorter than the click period after rate or mode changes.
+    static void fitHold(ClickConfig &);
     QTimer m_countdownTimer, m_poll;
     QFuture<void> m_task;
     ClickConfig m_config;
     std::atomic_bool m_cancel{false};
     std::atomic<qulonglong> m_clicks{0}, m_skipped{0};
     std::atomic<qint64> m_beginNs{0}, m_endNs{0}, m_maxLateNs{0};
-    Timing::Delivery m_delivery;
     QQueue<QPair<qint64, quint64>> m_samples;
     double m_recentCps = -1;
     int m_countdown = 0;
     bool m_active = false, m_available = false, m_ready = false, m_editing = false;
-    QString m_state = QStringLiteral("Готов"), m_error;
-    QStringList m_entries;
+    QString m_state = QStringLiteral("idle"), m_error;
     void *m_stopEvent = nullptr;
 };

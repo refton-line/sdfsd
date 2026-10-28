@@ -1,12 +1,7 @@
 #include "StartupController.h"
 #include <QDir>
 #include <QElapsedTimer>
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QSaveFile>
 #include <QStandardPaths>
-#include <QSvgRenderer>
 #include <QtConcurrent>
 #ifdef Q_OS_WIN
 #define WIN32_LEAN_AND_MEAN
@@ -25,16 +20,14 @@ void StartupController::start() {
     m_progress = 0;
     emit changed();
     m_task = QtConcurrent::run([this] {
-        auto report = [this](int percent, QString text, bool final = false, bool failure = false) {
+        // Errors are message codes; the UI owns the wording in both languages.
+        auto report = [this](int percent, const QString &error = {}, bool final = false) {
             QMetaObject::invokeMethod(
                 this,
-                [this, percent, text, final, failure] {
+                [this, percent, error, final] {
                     m_progress = percent;
-                    if (failure)
-                        m_error = text;
-                    else
-                        m_message = text;
-                    if (final || failure)
+                    m_error = error;
+                    if (final || !error.isEmpty())
                         m_running = false;
                     m_done = final;
                     emit changed();
@@ -42,66 +35,23 @@ void StartupController::start() {
                 Qt::QueuedConnection);
         };
         const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-        if (dir.isEmpty() || !QDir().mkpath(dir)) {
-            report(0, "Нет доступа к папке настроек", false, true);
+        if (dir.isEmpty() || !QDir().mkpath(dir) || !QDir().mkpath(dir + "/configs")) {
+            report(0, "settingsFolder");
             return;
         }
-        report(20, "Папка настроек доступна");
-        const QString filePath = dir + "/workspace.json";
-        if (!QFile::exists(filePath)) {
-            QSaveFile out(filePath);
-            const QByteArray defaults = "{\"schemaVersion\":1,\"profiles\":[]}";
-            if (!out.open(QIODevice::WriteOnly) || out.write(defaults) != defaults.size() ||
-                !out.commit()) {
-                report(20, "Не удалось сохранить настройки", false, true);
-                return;
-            }
-        }
-        QFile in(filePath);
-        if (!in.open(QIODevice::ReadOnly) || in.size() > 1024 * 1024) {
-            report(20, "Не удалось прочитать настройки: файл недоступен или слишком велик", false,
-                   true);
-            return;
-        }
-        const auto bytes = in.read(1024 * 1024 + 1);
-        if (bytes.size() > 1024 * 1024 || !in.atEnd()) {
-            report(20, "Файл настроек слишком велик", false, true);
-            return;
-        }
-        QJsonParseError parseError;
-        const auto document = QJsonDocument::fromJson(bytes, &parseError);
-        if (parseError.error != QJsonParseError::NoError || !document.isObject() ||
-            document.object().value("schemaVersion").toInt() != 1 ||
-            !document.object().value("profiles").isArray()) {
-            report(20,
-                   "Файл workspace.json повреждён или другой версии. Восстановите его из копии и "
-                   "нажмите «Повторить».",
-                   false, true);
-            return;
-        }
-        report(50, "Настройки проверены");
-        const QStringList icons = {"c-mark",   "keyboard", "folder", "activity",
-                                   "settings", "x",        "minus",  "cursor"};
-        for (const auto &icon : icons) {
-            QSvgRenderer renderer(":/qt/qml/CClicker/assets/" + icon + ".svg");
-            if (!renderer.isValid()) {
-                report(50, "Не удалось загрузить SVG: " + icon, false, true);
-                return;
-            }
-        }
-        report(80, "Ресурсы интерфейса готовы");
+        report(50);
 #ifdef Q_OS_WIN
         LARGE_INTEGER frequency;
         if (!QueryPerformanceFrequency(&frequency) || frequency.QuadPart <= 0) {
-            report(80, "Высокоточный счётчик Windows недоступен", false, true);
+            report(50, "noCounter");
             return;
         }
 #else
         if (!QElapsedTimer::isMonotonic()) {
-            report(80, "Монотонный счётчик недоступен", false, true);
+            report(50, "noCounter");
             return;
         }
 #endif
-        report(100, "Интерфейс готов", true);
+        report(100, {}, true);
     });
 }

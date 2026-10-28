@@ -1,6 +1,9 @@
 #include "ClickController.h"
 #include "ConfigStore.h"
 #include "Timing.h"
+#include "ClickPlanner.h"
+#include <cmath>
+#include <limits>
 #include "PhysicalKeyboard.h"
 #include <QDebug>
 #include <QFile>
@@ -24,18 +27,31 @@ int main(int argc, char **argv) {
             qFatal("FAIL: %s", label);
     };
     ClickController e;
-    check(e.intervalMs() == 100, "default interval");
-    e.setIntervalMs(5);
-    check(e.intervalMs() == 5, "minimum interval");
-    e.setIntervalMs(4);
-    check(e.intervalMs() == 5, "reject interval4");
-    e.setIntervalMs(10001);
-    check(e.intervalMs() == 5, "reject interval overflow");
-    e.setIntervalMs(10000);
-    check(e.intervalMs() == 10000, "maximum interval");
-    e.setDurationSec(3600);
-    e.setDurationSec(3601);
-    check(e.durationSec() == 3600, "duration bounds");
+    check(e.mode() == 0 && e.cps() == 12 && e.variance() == 1 && e.holdMs() == 0 && e.state() == "idle",
+          "defaults: Legit, 12 CPS, natural variance");
+    e.setCps(0);
+    check(e.cps() == 12, "zero CPS rejected");
+    e.setCps(-5);
+    check(e.cps() == 12, "negative CPS rejected");
+    e.setCps(std::numeric_limits<double>::quiet_NaN());
+    check(e.cps() == 12, "NaN CPS rejected");
+    e.setCps(std::numeric_limits<double>::infinity());
+    check(e.cps() == 12, "infinite CPS rejected");
+    e.setCps(250000);
+    check(e.cps() == 250000, "custom CPS has no practical cap");
+    e.setCps(12.5);
+    check(e.cps() == 12.5, "fractional CPS");
+    e.setMode(1);
+    check(e.mode() == 1, "Blatant mode");
+    e.setMode(2);
+    check(e.mode() == 1, "unknown mode rejected");
+    e.setVariance(3);
+    check(e.variance() == 1, "variance bounds");
+    e.setVariance(2);
+    check(e.variance() == 2, "loose variance");
+    e.setDurationSec(86400);
+    e.setDurationSec(86401);
+    check(e.durationSec() == 86400, "duration bounds");
     e.setMouseButton(2);
     check(e.mouseButton() == 2, "middle mouse");
     e.setMouseButton(3);
@@ -49,9 +65,18 @@ int main(int argc, char **argv) {
     check(e.startKey() == 0x75 && e.stopKey() == 0x77, "reset defaults");
     check(e.clicks() == 0 && e.measuredCps() < 0 && e.averageCps() < 0,
           "no fabricated measured rate");
-    e.setIntervalMs(5);
+    e.setMode(1);
+    e.setCps(200);
     e.setHoldMs(5);
-    check(e.holdMs() == 1, "hold shorter than interval");
+    check(e.holdMs() == 0 && e.error() == "holdTooLong", "Blatant hold must be shorter than the period");
+    e.dismissError();
+    e.setHoldMs(4);
+    check(e.holdMs() == 4, "Blatant hold inside the period");
+    e.setCps(1000);
+    check(e.holdMs() == 0 && e.cps() == 1000, "raising the rate shortens an overlong hold");
+    e.setHoldMs(1);
+    check(e.holdMs() == 0, "hold equal to a 1 ms period rejected");
+    e.setCps(200);
     e.setCountLimit(200);
     check(e.countLimit() == 200, "count limit");
     e.setBindingEditor(true);
@@ -421,8 +446,22 @@ int main(int argc, char **argv) {
     ClickConfig decoded;
     auto obj = Configuration::encode(e.config());
     check(Configuration::decode(obj, decoded, err), "config roundtrip");
-    obj["intervalMs"] = 5.5;
+    obj["holdMs"] = 0.5;
     check(!Configuration::decode(obj, decoded, err), "fraction rejected");
+    obj = Configuration::encode(e.config());
+    obj["cps"] = QString("fast");
+    check(!Configuration::decode(obj, decoded, err) && err == "notNumber:cps", "CPS type rejected");
+    obj["cps"] = 0;
+    check(!Configuration::decode(obj, decoded, err), "zero CPS rejected in JSON");
+    obj["cps"] = 2e9;
+    check(!Configuration::decode(obj, decoded, err), "CPS above one per nanosecond rejected");
+    obj["cps"] = 7500.25;
+    check(Configuration::decode(obj, decoded, err) && decoded.cps == 7500.25, "fractional high CPS round trip");
+    obj = Configuration::encode(e.config());
+    obj["mode"] = QString("turbo");
+    check(!Configuration::decode(obj, decoded, err), "unknown mode rejected in JSON");
+    obj["mode"] = QString("legit");
+    check(Configuration::decode(obj, decoded, err) && decoded.mode == 0, "mode names decode");
     obj = Configuration::encode(e.config());
     obj["stopKey"] = QString("F8");
     check(!Configuration::decode(obj, decoded, err), "type rejected");
@@ -436,12 +475,15 @@ int main(int argc, char **argv) {
     check(e.resetBindings() && store.apply(specialId), "profile AltGr PrintScreen loads and applies");
     check(e.config().startChord==QList<int>{165} && e.config().stopChord==QList<int>{44} && e.stopLabel()=="PrintScreen", "profile keeps exact modifiers and PrintScreen name");
     check(store.remove(specialId) && e.resetBindings(), "special profile regression cleans up");
-    check(store.saveNew("Тест5мс"), "save profile unicode name");
+    e.setCps(200);
+    check(store.saveNew("Тест200"), "save profile unicode name");
     check(store.profiles().size() == 1, "profile listed");
     auto id = store.profiles()[0].toMap()["id"].toString();
-    e.setIntervalMs(100);
+    check(store.profiles()[0].toMap()["mode"] == "blatant" && store.profiles()[0].toMap()["cps"].toDouble() == 200,
+          "profile row carries mode and rate");
+    e.setCps(10);
     check(store.modified(), "modified detected");
-    check(store.apply(id) && e.intervalMs() == 5, "apply profile");
+    check(store.apply(id) && e.cps() == 200, "apply profile");
     check(!store.modified(), "applied state clean");
     const QString out = temp.path() + "/export.json";
     check(store.exportFile(id, QUrl::fromLocalFile(out)), "export profile");
@@ -458,16 +500,12 @@ int main(int argc, char **argv) {
     check(!store.saveNew("\n"), "invalid name rejected");
     check(store.remove(id), "delete profile");
     check(store.profiles().size() == 1, "delete updates list");
-    auto next = Timing::advance(100, 105, 10);
-    check(next.deadline == 110 && next.skipped == 0, "normal deadline grid");
-    next = Timing::advance(100, 135, 10);
-    check(next.deadline == 140 && next.skipped == 3, "skip late slots no burst");
     check(Timing::rate(200, 1000000000) == 200, "measured rate200");
     check(Timing::rate(150, 1000000000) == 150, "does not substitute requested200");
     check(Timing::rate(1, 1000) < 0, "warmup no extrapolated rate");
     {
         ClickController restored;
-        check(restored.intervalMs() == 5 && restored.countLimit() == 200, "new config persistence");
+        check(restored.cps() == 200 && restored.mode() == 1 && restored.countLimit() == 200, "new config persistence");
     }
     const auto beforeCount = store.profiles().size();
     QFile huge(temp.path() + "/huge.json");
@@ -477,13 +515,12 @@ int main(int argc, char **argv) {
     check(!store.importFile(QUrl::fromLocalFile(huge.fileName())), "oversize import rejected");
     check(store.profiles().size() == beforeCount, "failed import does not alter profiles");
     check(!store.importFile(QUrl("https://example.com/config.json")), "remote import rejected");
-    e.setCountLimit(1000000001ULL);
+    e.setCountLimit(Configuration::MaxCountLimit + 1);
     check(e.countLimit() == 200, "count overflow rejected");
+    e.dismissError();
     obj = Configuration::encode(e.config());
     obj["countLimit"] = -1;
     check(!Configuration::decode(obj, decoded, err), "negative count rejected");
-    next = Timing::advance(100, 110, 10);
-    check(next.deadline == 120 && next.skipped == 1, "equal deadline skips no burst");
     check(Timing::rate(0, 1000000000) == 0, "zero sent means measured zero");
 #ifndef Q_OS_WIN
     const auto link = store.directory() + "/symlink.json";
@@ -505,38 +542,112 @@ int main(int argc, char **argv) {
     obj = Configuration::encode(e.config());
     check(Configuration::decode(obj, decoded, err) && decoded.startExtra.size() == 7,
           "multibind JSON roundtrip");
-    auto legacy = obj;
-    legacy.remove("startExtra");
-    legacy.remove("stopExtra");
-    legacy.remove("launchDelaySec");
+    const QJsonObject legacy{{"intervalMs", 5},  {"durationSec", 0}, {"mouseButton", 1},
+                             {"holdMs", 1},      {"countLimit", 0},  {"startKey", 0x75},
+                             {"startMods", 0},   {"stopKey", 0x77},  {"stopMods", 0}};
     check(Configuration::decode(legacy, decoded, err) && decoded.launchDelay == 3 &&
-              decoded.startExtra.isEmpty(),
-          "legacy nine field import");
+              decoded.startExtra.isEmpty() && decoded.mode == 1 && decoded.cps == 200 && decoded.hold == 1,
+          "legacy nine field import becomes Blatant at the same rate");
+    auto legacyBad = legacy;
+    legacyBad["holdMs"] = 5;
+    check(!Configuration::decode(legacyBad, decoded, err), "legacy hold not shorter than interval rejected");
+    legacyBad = legacy;
+    legacyBad["intervalMs"] = 4;
+    check(!Configuration::decode(legacyBad, decoded, err), "legacy interval below 5 ms rejected");
+    auto legacyV3 = legacy;
+    legacyV3["launchDelaySec"] = 4;
+    legacyV3["startExtra"] = QJsonArray{QJsonObject{{"key", 0x76}, {"mods", 0}}};
+    legacyV3["stopExtra"] = QJsonArray{};
+    check(Configuration::decode(legacyV3, decoded, err) && decoded.launchDelay == 4 && decoded.startExtra.size() == 1,
+          "legacy twelve field import");
     e.setLaunchDelaySec(7);
     check(e.launchDelaySec() == 7, "custom countdown");
     e.setLaunchDelaySec(0);
     check(e.launchDelaySec() == 7, "reject zero countdown");
     e.setLaunchDelaySec(11);
     check(e.launchDelaySec() == 7, "reject countdown overflow");
-    check(e.meanGapMs() < 0 && e.maxJitterMs() < 0, "no invented gap measurement");
-    Timing::TickGrid grid(100, 10000003, 5);
-    check(grid.at(200) == 100 + 10000003, "fractional QPC ticks preserved over one second");
-    check(grid.at(1000000) == 100 + 5000LL * 10000003, "no long run truncation drift");
-    check(grid.nextSlot(0, grid.at(1)) == 2, "equal rational deadline skips");
-    check(grid.nextSlot(0, grid.at(50) + 1) == 51, "late rational grid no catchup burst");
-    bool rational = true;
-    for (int i = 0; i < 5000; ++i) {
-        auto n = grid.nextSlot(0, 100 + i * 7919);
-        rational &= grid.at(n) > 100 + i * 7919 && grid.at(n - 1) <= 100 + i * 7919;
+    {
+        // Blatant grid
+        const Planner::Grid third(3);
+        check(third.at(3) == 1000000000, "fractional period lands exactly on whole seconds");
+        check(third.at(3000000) == 1000000000000000LL, "no long-run drift over a million slots");
+        check(third.dueThrough(-1) == 0 && third.dueThrough(0) == 1 && third.dueThrough(333333332) == 1 &&
+                  third.dueThrough(333333333) == 2,
+              "slot boundaries");
+        const Planner::Grid fast(10000);
+        check(fast.dueThrough(999999) == 10, "ten slots due in the first millisecond at 10k CPS");
+        const Planner::Grid limit(Configuration::MaxCps);
+        check(limit.periodNs() == 1 && limit.dueThrough(999) == 1000, "nanosecond grid at the maximum rate");
+        auto b = Planner::blatantBatch(120, 1e9 / 12, true, 0);
+        check(b.pairs == 1 && b.skipped == 119, "a stall at 12 CPS sends one click, not a burst");
+        b = Planner::blatantBatch(10, 1e9 / 10000, true, 0);
+        check(b.pairs == 10 && b.skipped == 0, "timer-resolution batching at 10k CPS");
+        b = Planner::blatantBatch(1000, 1e9 / 10000, true, 0);
+        check(b.pairs == Planner::MaxBatch && b.skipped == 1000 - Planner::MaxBatch, "batch capped per wake");
+        b = Planner::blatantBatch(10, 1e9 / 10000, true, 3);
+        check(b.pairs == 3 && b.skipped == 0, "count-limit trimming is not counted as skipped");
+        b = Planner::blatantBatch(4, 1e9 / 100, false, 0);
+        check(b.pairs == 1 && b.skipped == 3, "held clicks are sent one per wake");
+        b = Planner::blatantBatch(0, 1e9 / 100, true, 0);
+        check(b.pairs == 1 && b.skipped == 0, "a reached deadline always sends");
+        bool monotonic = true;
+        const Planner::Grid odd(7.3);
+        for (quint64 n = 1; n < 20000; ++n)
+            monotonic &= odd.at(n) > odd.at(n - 1) && odd.dueThrough(odd.at(n)) == n + 1;
+        check(monotonic, "grid and due count agree for 20000 slots");
     }
-    check(rational, "rational schedule boundary sweep 5000 samples");
-    Timing::GapStats gap;
-    gap.accept(0, 5000000);
-    check(gap.mean() == -1, "one insertion no gap yet");
-    gap.accept(6000000, 5000000);
-    gap.accept(10000000, 5000000);
-    check(gap.mean() == 5000000 && gap.maxJitter == 1000000,
-          "measured gaps and jitter from actual samples");
+    {
+        // Legit humaniser
+        double spread[3] = {};
+        for (int variance = 0; variance < 3; ++variance) {
+            Planner::Humanizer human(12, variance, 1234 + variance);
+            double sum = 0, squares = 0, holdSum = 0;
+            bool holdsInside = true, gapsBounded = true;
+            const int n = 4000;
+            for (int i = 0; i < n; ++i) {
+                const auto step = human.next();
+                sum += double(step.gapNs);
+                squares += double(step.gapNs) * double(step.gapNs);
+                holdSum += double(step.holdNs);
+                holdsInside &= step.holdNs > 0 && step.holdNs < step.gapNs * 0.61;
+                gapsBounded &= step.gapNs >= human.meanNs() * 0.39 && step.gapNs <= human.meanNs() * 3.91;
+            }
+            const double mean = sum / n, rate = 1e9 / mean;
+            spread[variance] = std::sqrt(squares / n - mean * mean) / mean;
+            check(std::abs(rate - 12) / 12 < 0.02, "Legit long-run average stays within 2% of target");
+            check(holdsInside, "Legit hold always inside its gap");
+            check(gapsBounded, "Legit gaps stay within bounds");
+            check(holdSum / n > 25e6 && holdSum / n < 60e6, "Legit hold shortens with fast clicking at 12 CPS");
+        }
+        Planner::Humanizer relaxed(3, 1, 77);
+        double relaxedHold = 0;
+        for (int i = 0; i < 1000; ++i)
+            relaxedHold += double(relaxed.next().holdNs);
+        check(relaxedHold / 1000 > 55e6 && relaxedHold / 1000 < 95e6, "Legit hold is finger-like at relaxed rates");
+        check(spread[0] > 0.04 && spread[0] < spread[1] && spread[1] < spread[2] && spread[2] < 0.5,
+              "variance setting orders the rhythm spread");
+        Planner::Humanizer a(16, 1, 99), b(16, 1, 99), c(16, 1, 100);
+        bool same = true, different = false;
+        for (int i = 0; i < 200; ++i) {
+            const auto x = a.next(), y = b.next(), z = c.next();
+            same &= x.gapNs == y.gapNs && x.holdNs == y.holdNs;
+            different |= x.gapNs != z.gapNs;
+        }
+        check(same && different, "Legit sequence is seeded, not fixed");
+        double warm = 0;
+        for (quint64 seed = 0; seed < 64; ++seed) {
+            Planner::Humanizer h(10, 1, seed);
+            warm += double(h.next().gapNs);
+        }
+        check(warm / 64 > 1.15e8, "Legit warm-up starts slower than the target");
+        Planner::Humanizer quick(1000, 2, 5);
+        bool quickHolds = true;
+        for (int i = 0; i < 5000; ++i) {
+            const auto step = quick.next();
+            quickHolds &= step.holdNs > 0 && step.holdNs < step.gapNs;
+        }
+        check(quickHolds, "Legit holds fit even at 1000 CPS");
+    }
     store.setSearchQuery("");
     check(store.saveNew("Beta keyboard"), "save beta profile");
     QString betaId;
@@ -611,8 +722,8 @@ int main(int argc, char **argv) {
     check(tripleFile.open(QIODevice::ReadOnly), "read saved triple envelope");
     const auto tripleBytes = tripleFile.readAll();
     tripleFile.close();
-    check(QJsonDocument::fromJson(tripleBytes).object()["version"].toInt() == 3,
-          "physical triple uses version 3 envelope");
+    check(QJsonDocument::fromJson(tripleBytes).object()["version"].toInt() == 4,
+          "profiles use the version 4 envelope");
     check(e.resetBindings() && store.apply(tripleId), "apply saved triple after reset");
     check(e.config().startChord == QList<int>({72, 89, 163}), "saved side-specific triple round trip");
     const QUrl tripleExport = QUrl::fromLocalFile(temp.path() + "/triple-export.json");
@@ -622,6 +733,9 @@ int main(int argc, char **argv) {
       check(loadedTriple.config().startChord == QList<int>({72, 89, 163}),
             "persist explicit triple through settings reload"); }
     check(e.resetBindings(), "restore defaults after triple persistence");
+    for (const char *example : {"legit-12cps.json", "blatant-1000cps.json"})
+        check(store.importFile(QUrl::fromLocalFile(QString(CCLICKER_SOURCE_DIR) + "/examples/" + example)),
+              "bundled v4 example imports");
     QSettings().clear();
     qInfo() << "CONTROLLER_CONFIG_TIMING_PASS" << checks << "assertions";
 }

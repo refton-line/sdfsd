@@ -1,68 +1,57 @@
-# C clicker · 0.4.7 AltGrCapture
+# C clicker 0.5.0
 
-Нативная утилита C++20 / Qt Quick 6.8.3 для Windows 10/11 x64. Без Electron.
+Native C++20 / Qt Quick 6.8.3 auto clicker for Windows 10/11 x64. Grey-white Liquid Glass interface,
+an iPhone-style Dynamic Island, two click engines and an uncapped custom rate. English by default,
+Russian included.
 
-## Физический захват AltGr в 0.4.7
-- В открытом редакторе AltGr принимается также из события Qt. В Windows раньше Qt-события поглощались без изменения выбранного набора; захват зависел только от доставки Raw Input.
-- Распознаётся явный Qt AltGr, а в Windows — также Alt с VK_RMENU или extended scan-code правого Alt. Маска Ctrl/Alt не превращается в дополнительные клавиши.
-- Совпавшие Qt/Raw Input нажатия объединяются в одно физическое нажатие: набор не переключается дважды. Отпускание каждого источника учитывается отдельно, повтор не меняет выбор; потеря фокуса очищает удержание.
-- Фоновый обработчик биндов, сохранение, оформление и движок кликов не менялись. 642 unit-проверки; Qt-only и совмещённый захват проверены в нативном интерфейсе с применением/повторным открытием.
-- Windows EXE кросс-собран, но физическая клавиатура Windows здесь не проверялась. Исправлен конкретный путь захвата, а не заявлена гарантия для всех драйверов/раскладок.
+## Click modes
+| Mode | What it does |
+|---|---|
+| **Legit** | Human emulation. Each gap gets log-normal jitter around the target rate, a slow tempo drift, rare hesitations and quick doubles, a short warm-up, and a finger-like press duration that shrinks as the rate rises. A mean correction keeps the long-run average within ~2% of the target. *Variance*: Tight / Natural / Loose. |
+| **Blatant** | Direct clicking, no emulation. Exact fixed grid with no drift. When the rate outruns the Windows timer, due clicks are sent together in one `SendInput` batch (up to 128 pairs per wake), so very high rates are reachable. Optional hold in ms (0 = press and release together). |
 
-## Одиночные бинды и PrintScreen в 0.4.6
-- Одиночные левые/правые Ctrl, Alt, Shift и PrintScreen принимаются как физические клавиши и в прежних API назначения. Специальные одиночные клавиши сохраняются явным набором, без потери стороны.
-- В редакторе принимается ShortcutOverride, чтобы внутренние Qt-сочетания не перехватывали клавишу до захвата. Вне редактора обычные сочетания не меняются.
-- PrintScreen отображается как PrintScreen, а не «?». Проверяются имена всех допустимых одиночных и составных назначений.
-- Проверяется весь путь AltGr: выбор, применение, повторное открытие, JSON/настройки/профиль и событие запуска/остановки. То же проверяется для PrintScreen. 599 unit-проверок.
-- Отказ прежнего API одиночного AltGr воспроизведён до исправления. Физический отказ на Windows здесь не воспроизводился: UI проверяется Linux Qt и воспроизведением Windows-пакетов, Windows EXE кросс-собран.
+**Custom CPS.** Type any positive value (decimals allowed) into the large number or use the − / + buttons
+and presets. There is no upper limit in the UI; the only technical bound is one click per nanosecond.
+What a target app actually receives depends on Windows and that app. Legit is timer-paced and
+practically tops out around ~1000 CPS. Uncapped throughput is a Blatant feature.
 
-## Сохранённые изменения ввода и ошибок в 0.4.5
-- Полный scan-code проверяется до преобразования: помеченный синтетический Ctrl (0x21d) и некорректные старшие биты не превращаются в физический левый/правый Ctrl. Идентичность клавиши по scan-code и E0 имеет приоритет над противоречивым VK.
-- Настоящее Ctrl с правым Alt сохраняется: нет эвристики «удалять любой Ctrl рядом с AltGr». Различаются повторные make, break и устройства.
-- Конфликт, пустой/некорректный набор и лимит клавиш показываются только в редакторе. Изменение набора, отмена, повторное открытие и успешное применение очищают локальную ошибку. Убрано второе, устаревавшее QML-состояние ошибки.
-- Общие сообщения можно закрыть крестиком. Закрытие не включает недоступный ввод и не меняет настройки. Серьёзный сбой регистрации виден и в открытом редакторе.
-- 454 проверки и сценарии нативного Qt-интерфейса. Windows-пакеты воспроизводятся через тот же декодер контроллера; это не проверка доставки событий с физической Windows-клавиатуры. Неотличимый от реального Ctrl непомеченный пакет не отбрасывается по догадке.
+## Interface
+- **Dynamic Island.** It boots at the centre of the window, then rises into the title bar. Its views are idle (mode + target), countdown ring, live (mode, activity bars, measured CPS), expanded on hover or click (CPS, clicks, time, stop), mode/profile/material notices, errors and a run summary. All views morph with springs and fade through blur.
+- **Island over other windows.** While you click in another app, a copy sits at the top of the screen. It never takes focus or mouse input, so the target window keeps foreground. You can turn it off in Appearance.
+- **Material.** *Liquid Glass*: translucent, with specular rims and drifting light (iOS 26/27 style). *Solid*: opaque iOS 14-style cards. Switching between them morphs instead of snapping.
+- **Language.** English (default) or Русский. The content cross-fades when you switch.
+- Pages: Clicker, Hotkeys, Profiles, Appearance, Language. Each one has its own icon.
 
-## Исправление Tab в 0.4.4
-В открытом редакторе физический Tab выбирает клавишу назначения. В режиме сочетания можно добавить Tab вместе с другими клавишами; повторный выбор убирает его, автоповтор не меняет набор. Shift с Tab больше не обходит виртуальные кнопки: записываются две физические клавиши. После закрытия редактора обычная навигация Tab/Shift с Tab восстановлена.
+## Hotkeys and profiles
+The physical-key binding engine from 0.4.x is unchanged: Raw Input, 1–3 keys per shortcut, up to 8
+alternatives each for start and stop, side-specific Ctrl/Alt/Shift, AltGr and PrintScreen. Defaults
+are F6 to start and F8 to stop. Profiles are JSON (v4). v1–v3 profiles still load: an old fixed
+interval becomes Blatant at the same rate.
 
-## Сохранённая чистка 0.4.3
-- Убрана кнопка информации в «Сессии» и отдельная кнопка обновления в «Конфигурациях». Список перечитывается при входе в раздел, а операции сохранения/импорта/удаления продолжают обновлять его автоматически.
-- Удалены неиспользуемая info.svg, старое свойство подсказок, декоративный neon-флаг, совместимые поля chosenVK/chosenMods и старый сигнал захвата. Редактор и тесты используют один актуальный набор draftKeys.
-- Виртуальная клавиатура использует один физический идентификатор вместо дублирующих k/m/v. Карта приведена к читаемому виду; удалены лишние импорты. Доступные имена действующих кнопок сохранены.
-- Логика тройных биндов, профили v3, тайминг и отправка кликов не менялись. Полезные кнопки сброса назначений, импорта и управления профилями сохранены.
+## Safety behaviour
+Clicking runs only while the window that was in front at the end of the countdown keeps focus and
+the cursor stays inside it. A press is always followed by its release. Closing the app stops input
+before the closing animation plays. The EXE is unsigned; do not disable Windows protection to run it.
 
-## Назначения клавиш
-- «Одна клавиша» или «Сочетание»: от одной до трёх физических клавиш, включая несколько букв. Нажать их для срабатывания нужно одновременно; порядок не важен.
-- Выбор мышью на виртуальной клавиатуре и физической клавиатурой пополняет один набор. Повторный выбор снимает клавишу. Автоповтор не переключает выбор; четвёртая клавиша отклоняется.
-- В редакторе каждая клавиша показана отдельной плашкой. Разделительного «+» нет: H, Num +, Y — три настоящие клавиши, а H, Y — две.
-- Левые и правые Ctrl/Alt/Shift, основной и цифровой Enter различаются. Стрелки и отдельный блок Insert/Delete/Home/End/Page Up/Page Down имеют собственные физические коды, отдельно от цифрового блока.
-- При выключенном Num Lock цифры и десятичный разделитель numpad не назначаются и не активируют бинды. Операции numpad и отдельная навигация работают независимо. Num Lock — индикатор, не назначаемая клавиша.
-- До восьми альтернатив на запуск и восьми на остановку. Дубликаты и пересекающиеся подмножества отклоняются, чтобы короткое назначение не срабатывало раньше длинного.
-
-Windows-ввод переведён с RegisterHotKey на Raw Input и сопоставление удерживаемых физических клавиш. Идентичность определяется scan-code и E0/E1, не готовой маской Ctrl/Alt от Qt. Во время редактора действия запуска/остановки приостановлены. В фоне сохраняется только временное состояние настроенных клавиш для срабатывания назначений; текстовый ввод не записывается. Клавиши не блокируются в других программах.
-
-## Запуск и обновление
-Распакуйте весь Windows ZIP и откройте CClicker.exe. Не переносите один EXE без DLL, plugins и qml. Приложение не подписано: не отключайте защиту Windows ради запуска.
-
-По умолчанию запуск F6, остановка F8. Во время отсчёта выберите целевое окно и наведите курсор внутрь. Закрытие сразу отменяет отправку. «Файлы» открывает папку профилей.
-
-Перед обновлением сохраните копию JSON. Новые профили записываются в формате v3 с явными наборами клавиш; старые v1/v2 читаются. Старые общие Ctrl/Alt/Shift продолжают принимать обе стороны до переназначения. Старое четырёхклавишное сочетание читается, но редактор ограничивает новое назначение тремя и показывает предупреждение.
-
-Чёрно-красная тема, отсутствие Beta/служебных надписей и подсказок кнопок сохранены. Анимации всегда включены. Разворачивание до рабочей области и полный экран — разные действия; F11 не перехватывает настроенный бинд с F11.
-
-## Проверки и ограничения
-QA.md и evidence/altgrcapture содержат результаты текущего прогона. Нативный Linux/Qt UI и тесты проверены; Windows EXE кросс-собран, но НЕ запускался на Windows здесь. Физические Windows-клавиатуры, AltGr, смешанный DPI и SendInput требуют проверки на Windows. Fn и перехваченные ОС клавиши не гарантируются. Win/F12 недоступны; Tab в открытом редакторе назначается физически или мышью и не переводит фокус. Ограничения одновременных нажатий аппаратной клавиатуры программно не устраняются.
-
-Raw Input не резервирует сочетания эксклюзивно: другие приложения тоже могут отреагировать. Выбирайте безопасные назначения. CPS означает отправку, а не подтверждённую обработку целевой программой. Ускорение движка не заявляется.
-
-## Сборка
-CMake >=3.24, C++20, Qt 6.8.3 (Quick, QuickControls2, Svg, Concurrent).
-
+## Build
+Requires CMake ≥ 3.24, C++20 and Qt 6.8.3 (Quick, QuickControls2, Concurrent).
 ```sh
+# Native (Linux/Windows) build and tests
 cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt/6.8.3/gcc_64 -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure
+# Windows EXE from Linux (MinGW-w64 13 posix + Qt 6.8.3 mingw_64 kit)
+QT_HOST_PATH=/opt/Qt/6.8.3/gcc_64 QT_WIN_PATH=/opt/Qt/6.8.3/mingw_64 scripts/build-cross.sh
+python3 scripts/package-windows.py --qt "$QT_WIN_PATH" --exe build-cross/bin/CClicker.exe \
+  --receiver build-cross/CClickerReceiver.exe --runtime <dir with MinGW runtime DLLs> --output dist/C-clicker
+# Screenshot tour (needs X11/Xvfb and OpenGL): writes PNGs for every screen and state
+xvfb-run -a build/bin/CClicker --capture shots
 ```
+`CClickerReceiver.exe` is a test window that counts the clicks it receives, so you can check the real
+delivered rate on Windows.
 
-Кросс-сборка: scripts/build-cross.sh. Capture-сценарии меняют тестовые профили: запускайте только с изолированным XDG_CONFIG_HOME.
+## Limitations
+Built and packaged by cross-compiling. The Windows build was smoke-tested only (see QA.md); physical
+Windows input (SendInput delivery, Raw Input on real keyboards, DPI) needs testing on real Windows.
+Fn and OS-intercepted keys are not guaranteed; Win and F12 cannot be bound. Raw Input does not
+reserve hotkeys exclusively.

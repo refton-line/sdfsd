@@ -39,6 +39,8 @@ class ConfigStore final : public QObject {
   signals:
     void changed();
     void profilesChanged();
+    // Result of a user operation, as a message code; drives island notifications.
+    void noticed(const QString &code, bool ok);
 
   private:
     QString safePath(const QString &id) const;
@@ -47,7 +49,7 @@ class ConfigStore final : public QObject {
     bool finish(bool ok, const QString &text);
     ClickController *m_engine;
     QString m_query;
-    QString m_directory, m_notice, m_activeId, m_activeName = QStringLiteral("Без конфигурации");
+    QString m_directory, m_notice, m_activeId, m_activeName;
     QJsonObject m_applied;
     QVariantList m_profiles;
     bool m_failed = false;

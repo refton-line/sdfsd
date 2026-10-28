@@ -3,14 +3,15 @@ set -euo pipefail
 : "${QT_HOST_PATH:?set native Qt 6.8.3 kit path}"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 build="${BUILD_DIR:-$root/build-native}"
-cmake="${CMAKE:-cmake}"
-ctest="${CTEST:-ctest}"
 export LANG=C.UTF-8
 export LD_LIBRARY_PATH="$QT_HOST_PATH/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
-"$cmake" -S "$root" -B "$build" -DCMAKE_PREFIX_PATH="$QT_HOST_PATH" -DCMAKE_BUILD_TYPE=Release
-"$cmake" --build "$build" --parallel 4
-"$ctest" --test-dir "$build" --output-on-failure
+cmake -S "$root" -B "$build" -DCMAKE_PREFIX_PATH="$QT_HOST_PATH" -DCMAKE_BUILD_TYPE=Release
+cmake --build "$build" --parallel 4
+QT_QPA_PLATFORM=offscreen ctest --test-dir "$build" --output-on-failure
 profile="$(mktemp -d)"
 trap 'rm -rf "$profile"' EXIT
-XDG_CONFIG_HOME="$profile" "$build/bin/CClicker" --capture "$build/qa-previews" --capture-slow
+# Glass blur and Shapes need a real OpenGL context; Xvfb + Mesa is enough.
+# CAPTURE_PACE=2 gives software GL time to render each step.
+XDG_CONFIG_HOME="$profile" CAPTURE_PACE="${CAPTURE_PACE:-2}" QT_QPA_PLATFORM=xcb \
+  xvfb-run -a -s "-screen 0 1600x1000x24" "$build/bin/CClicker" --capture "$build/qa-previews"
+echo "Screens: $build/qa-previews"
