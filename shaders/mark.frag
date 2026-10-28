@@ -1,5 +1,5 @@
 #version 440
-// Light clicker mark: a four-point star with eight rays, split down the middle. Left of `split`
+// Light clicker mark: a five-point star with rays, split down the middle. Left of `split`
 // it is Liquid Glass (refracts the backdrop, lit bezel, specular rim, a travelling glint, glowing
 // rays); right of it the same shape is plain solid ink. `tile` adds the app-icon squircle, split
 // the same way (frosted glass | white).
@@ -23,17 +23,6 @@ layout(binding = 2) uniform sampler2D frosted;
 
 const float PI = 3.14159265;
 
-float sdStar4(vec2 p, float r, float m) {
-    const float an = PI / 4.0;
-    float en = PI / m;
-    vec2 acs = vec2(cos(an), sin(an));
-    vec2 ecs = vec2(cos(en), sin(en));
-    float bn = mod(atan(p.x, p.y), 2.0 * an) - an;
-    p = length(p) * vec2(cos(bn), abs(sin(bn)));
-    p -= r * acs;
-    p += ecs * clamp(-dot(p, ecs), 0.0, r * acs.y / ecs.y);
-    return length(p) * sign(p.x);
-}
 float sdSegment(vec2 p, vec2 a, vec2 b) {
     vec2 pa = p - a, ba = b - a;
     float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
@@ -43,47 +32,54 @@ float roundedBox(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - halfSize + vec2(r);
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
-// Four-point sparkle: a concave superellipse (|x|^k + |y|^k)^(1/k) = r with k < 1, tips on the
-// axes and the vertical pair a little longer. Distance is first-order: (F - r) / |grad F|.
-// `small` (0..1) is the simplified form for title-bar and sidebar sizes: a fuller star and four
-// diagonal rays instead of eight.
+// `small` (0..1) is the simplified form for title-bar and sidebar sizes: a chubbier star and only
+// the four rays between its points.
 float small;
-float sparkleF(vec2 q) {
-    float k = mix(0.62, 0.74, small);
-    vec2 a = max(abs(q * vec2(1.0, 0.86)), vec2(1e-6));
-    return pow(pow(a.x, k) + pow(a.y, k), 1.0 / k);
+// Five-point star, point up (q has y down). Exact distance (after Inigo Quilez's sdStar5): `r` is
+// the tip radius, `rf` the notch radius as a fraction of it.
+float sdStar5(vec2 p, float r, float rf) {
+    const vec2 k1 = vec2(0.809016994375, -0.587785252292);
+    const vec2 k2 = vec2(-k1.x, k1.y);
+    p.x = abs(p.x);
+    p -= 2.0 * max(dot(k1, p), 0.0) * k1;
+    p -= 2.0 * max(dot(k2, p), 0.0) * k2;
+    p.x = abs(p.x);
+    p.y -= r;
+    vec2 ba = rf * vec2(-k1.y, k1.x) - vec2(0.0, 1.0);
+    float h = clamp(dot(p, ba) / dot(ba, ba), 0.0, r);
+    return length(p - ba * h) * sign(p.y * ba.x - p.x * ba.y);
 }
 float star(vec2 q) {
-    float r = mix(0.295, 0.33, small);
-    const float e = 0.0015;
-    float f = sparkleF(q);
-    vec2 g = vec2(sparkleF(q + vec2(e, 0.0)) - sparkleF(q - vec2(e, 0.0)),
-                  sparkleF(q + vec2(0.0, e)) - sparkleF(q - vec2(0.0, e))) / (2.0 * e);
-    // |grad F| blows up next to the axes for k < 1; clamping keeps the distance usable there.
-    return (f - r) / clamp(length(g), 0.35, 1.6);
+    // Rounded corners: the distance is offset outwards, so the tips come out soft.
+    return sdStar5(vec2(q.x, -q.y), mix(0.29, 0.30, small), mix(0.50, 0.56, small)) - mix(0.03, 0.045, small);
 }
-// Eight rays at 22.5 degrees off the axes, so the split never runs along one; long and short
-// alternate. `lit` is the nearest ray's loading progress, `shine` its shimmer.
+// Rays point between the star's points (long) and past its tips (short). None lies on the vertical
+// axis, so the split never runs along a ray: the top tip and the bottom notch have none.
+// `lit` is the nearest ray's loading progress, `shine` its shimmer.
 float rays(vec2 q, float w, out float lit, out float shine) {
     float d = 1e3;
     lit = 0.0;
     shine = 1.0;
     bool simple = small > 0.5;
-    int count = simple ? 4 : 8;
-    for (int i = 0; i < count; ++i) {
-        float a = simple ? (float(i) + 0.5) * PI * 0.5 : (float(i) + 0.5) * PI * 0.25;
-        vec2 dir = vec2(sin(a), -cos(a));
-        bool longRay = simple || (i % 2) == 0;
-        float r0 = simple ? 0.31 : longRay ? 0.225 : 0.235;
-        float r1 = simple ? 0.47 : longRay ? 0.455 : 0.37;
-        float on = clamp(progress * float(count) - float(i), 0.0, 1.0);
+    float count = simple ? 4.0 : 8.0;
+    int n = 0;
+    for (int k = 1; k <= 9; ++k) {
+        bool between = (k % 2) == 1;
+        if (k == 5 || (simple && !between))
+            continue;
+        float on = clamp(progress * count - float(n), 0.0, 1.0);
+        n += 1;
         if (on <= 0.0)
             continue;
+        float a = float(k) * PI / 5.0;
+        vec2 dir = vec2(sin(a), -cos(a));
+        float r0 = between ? (simple ? 0.27 : 0.245) : 0.395;
+        float r1 = between ? 0.47 : 0.465;
         float di = sdSegment(q, dir * r0, dir * mix(r0 + 0.001, r1, on)) - w;
         if (di < d) {
             d = di;
             lit = on;
-            shine = 0.72 + 0.28 * sin(time * 2.2 + float(i) * 1.3);
+            shine = 0.72 + 0.28 * sin(time * 2.2 + float(k) * 1.3);
         }
     }
     return d;
