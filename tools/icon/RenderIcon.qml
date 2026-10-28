@@ -18,11 +18,11 @@ Window {
     Item {
         id: scene
         width: 1024; height: 1024
-        Rectangle { anchors.fill: parent; gradient: Gradient { GradientStop { position: 0; color: "#f2f3f6" } GradientStop { position: 1; color: "#c9cdd5" } } }
-        Rectangle { x: -260; y: 560; width: 700; height: 700; radius: 350; color: "#3a3d44"; opacity: 0.75 }
-        Rectangle { x: -120; y: -220; width: 620; height: 620; radius: 310; color: "#ffffff" }
-        Rectangle { x: 260; y: 330; width: 360; height: 360; radius: 180; color: "#9aa0ab"; opacity: 0.7 }
-        Repeater { model: 3; Rectangle { x: 80 + index * 150; y: -100; width: 6; height: 1300; color: "#ffffff"; opacity: 0.6; rotation: 24 } }
+        // Calm and balanced, so the frosted half of the tile is nearly as light as the white one.
+        Rectangle { anchors.fill: parent; gradient: Gradient { GradientStop { position: 0; color: "#f6f7f9" } GradientStop { position: 1; color: "#dadde3" } } }
+        Rectangle { x: 120; y: -300; width: 780; height: 780; radius: 390; color: "#ffffff" }
+        Rectangle { x: 260; y: 640; width: 500; height: 500; radius: 250; color: "#8d929c"; opacity: 0.35 }
+        Repeater { model: 2; Rectangle { x: 300 + index * 260; y: -100; width: 5; height: 1300; color: "#ffffff"; opacity: 0.7; rotation: 24 } }
     }
     ShaderEffectSource { id: sharpTex; sourceItem: scene; hideSource: true; visible: false }
     MultiEffect { id: blur; width: 1024; height: 1024; source: sharpTex; blurEnabled: true; blur: 1; blurMax: 64; autoPaddingEnabled: false; visible: false }

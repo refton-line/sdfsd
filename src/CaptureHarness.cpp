@@ -60,10 +60,19 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
             for (int ms : {350, 650, 950})
                 QTimer::singleShot(ms, win, [=] { shot(midShot + "-" + QString::number(ms)); });
     };
-    add(260, [=] { shot("01-boot"); });
-    add(820, [=] { shot("01-loading"); });
-    add(1080, [=] { shot("01-launch-fly"); });
-    add(1350, [=] { shot("02-launch"); });
+    // Real-time bursts (not paced) catch window animations part-way.
+    const int motion = qMax(1, qEnvironmentVariableIntValue("LIGHTCLICKER_MOTION_SCALE"));
+    auto burst = [=](const QString &name, std::initializer_list<int> times) {
+        for (int ms : times)
+            QTimer::singleShot(ms * motion, win, [=] { shot(name + "-" + QString::number(ms)); });
+    };
+    // Grabs block the GUI thread on software GL: only burst the launch when it is slowed down.
+    if (motion > 1) {
+        add(1, [=] { burst("01-launch", {150, 450, 800, 1150, 1500, 1900, 2400}); });
+    } else {
+        add(500, [=] { shot("01-launch-loading"); });
+        add(1700, [=] { shot("02-launch-reveal"); });
+    }
     add(2600, [=] { shot("03-glass-clicker"); });
     add(2700, [=] { island(true); });
     add(3500, [=] { shot("04-glass-island-expanded"); });
@@ -146,8 +155,27 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
         engine->presentForCapture("idle", 3120, 14.6, 0);
         call("setLanguage", "en");
     });
-    add(35100, [=] { win->close(); });
-    add(35160, [=] { shot("31-closing"); });
+    add(35000, [=] {
+        QMetaObject::invokeMethod(win, "toggleMaximized");
+        burst("31-maximize", {90, 220, 700});
+    });
+    add(36500, [=] {
+        QMetaObject::invokeMethod(win, "toggleMaximized");
+        burst("32-restore", {90, 220, 700});
+    });
+    add(38000, [=] {
+        QMetaObject::invokeMethod(win, "minimizeAnimated");
+        burst("33-minimize", {100, 220});
+    });
+    add(39500, [=] {
+        win->showNormal();
+        win->requestActivate();
+        burst("34-unminimize", {150, 350, 900});
+    });
+    add(41000, [=] {
+        win->close();
+        burst("35-closing", {120, 300, 520, 700, 820});
+    });
 
     // Relative scheduling: a slow grab on software GL must not bunch later steps together.
     const int pace = qEnvironmentVariableIntValue("CAPTURE_PACE") > 0 ? qEnvironmentVariableIntValue("CAPTURE_PACE") : 1;

@@ -1,6 +1,6 @@
 #version 440
 // Light clicker mark: a five-point star split down the middle. Left of `split` it is Liquid Glass
-// (refracts the backdrop, lit bezel, specular rim); right of it the same star is solid ink, which
+// (refracts the backdrop, bezel lit from above, crisp edge); right of it the same star is solid ink, which
 // fills from the bottom up with `progress` while the app loads. `tile` adds the app-icon squircle,
 // split the same way (frosted glass | white).
 layout(location = 0) in vec2 qt_TexCoord0;
@@ -70,10 +70,10 @@ void main() {
     float px = 1.0 / side;
     small = clamp((60.0 - side) / 24.0, 0.0, 1.0);
     bool glass = uv.x < split;
-    float scale = tile > 0.5 ? 0.78 : 1.0;
+    float scale = tile > 0.5 ? mix(0.78, 0.88, small) : 1.0;
     vec2 q = p / scale;
     float qpx = px / scale;
-    vec2 light = normalize(vec2(-0.55, -0.83));
+    vec2 tileLight = normalize(vec2(-0.55, -0.83));
     vec4 col = vec4(0.0);
 
     // App-icon tile
@@ -88,7 +88,7 @@ void main() {
                 vec2 n = normalize(p + 1e-5);
                 vec3 f = backdrop(frosted, uv, -n * 0.03 * tt * tt);
                 t = mix(f, vec3(1.0), 0.30);
-                float facing = dot(n, light);
+                float facing = dot(n, tileLight);
                 float rimLine = 1.0 - smoothstep(0.0, 2.0 * px, inner);
                 t += vec3(rimLine * (0.35 + 0.65 * max(facing, 0.0)) + tt * tt * max(facing, 0.0) * 0.25);
                 t *= 1.0 - 0.10 * tt * tt * max(-facing, 0.0);
@@ -103,29 +103,34 @@ void main() {
 
     float dS = star(q);
     float cS = clamp(0.5 - dS / qpx, 0.0, 1.0);
+    // One soft shadow under the whole star, so both halves sit on the surface the same way.
+    float dShadow = star(q - vec2(0.0, 0.018));
+    float shadow = (1.0 - smoothstep(-0.01, 0.06, dShadow)) * 0.16 * (1.0 - small);
+    col = over(col, vec3(0.10, 0.11, 0.14), shadow * (1.0 - cS));
     if (glass) {
-        // Contact shadow so clear glass still reads on light surfaces.
-        float dShadow = star(q - vec2(0.0, 0.022));
-        float shadow = (1.0 - smoothstep(0.0, 0.07, dShadow)) * 0.30 * step(0.0, dS);
-        col = over(col, vec3(0.10, 0.11, 0.14), shadow);
         if (cS > 0.0) {
             const float e = 0.002;
             vec2 n = vec2(star(q + vec2(e, 0.0)) - star(q - vec2(e, 0.0)), star(q + vec2(0.0, e)) - star(q - vec2(0.0, e)));
             n = length(n) > 1e-6 ? normalize(n) : vec2(0.0);
             float inner = max(-dS, 0.0);
-            float t = 1.0 - clamp(inner / 0.07, 0.0, 1.0);
+            float t = 1.0 - clamp(inner / mix(0.06, 0.08, small), 0.0, 1.0);
             float curve = t * t;
-            vec2 offset = (-n * 0.09 * curve - q * 0.30) * scale * side / itemSize;
-            vec3 seen = backdrop(sharp, uv, offset);
-            vec3 s = mix(seen, vec3(0.97, 0.975, 0.985), 0.30);
+            vec2 offset = (-n * 0.05 * curve - q * 0.10) * scale * side / itemSize;
+            // Frosted body, sharp refraction only in the bezel: a calm surface without smudges.
+            vec3 seen = mix(backdrop(frosted, uv, offset), backdrop(sharp, uv, offset), curve);
+            // Grey-tinted glass: light at large sizes, a mid grey at small ones so the glass half
+            // carries the same visual weight as the ink half.
+            vec3 s = mix(seen, mix(vec3(0.93, 0.94, 0.96), vec3(0.66, 0.69, 0.74), small), mix(0.30, 0.55, small));
+            // Lit from above, so the bezel reads the same on every point of the half.
+            vec2 light = normalize(vec2(-0.3, -1.0));
             float facing = dot(n, light);
-            float rimLine = 1.0 - smoothstep(0.0, 1.6 * qpx, inner);
-            s += vec3(rimLine * (0.35 + 0.65 * pow(max(facing, 0.0), 1.2)) + rimLine * 0.4 * pow(max(-facing, 0.0), 2.0));
-            s += vec3(curve * max(facing, 0.0) * 0.35);
-            s *= 1.0 - 0.45 * curve * max(-facing, 0.0);
-            s = mix(s, vec3(0.30, 0.32, 0.37), 0.35 * (1.0 - smoothstep(0.0, 1.2 * qpx, inner)) * max(-facing, 0.0));
-            // Small sizes: a graphite outline so the clear half still reads as a shape.
-            s = mix(s, vec3(0.36, 0.38, 0.43), 0.75 * small * (1.0 - smoothstep(0.0, 1.4 * qpx, inner)));
+            s += vec3(curve * max(facing, 0.0) * 0.30);
+            s *= 1.0 - 0.30 * curve * max(-facing, 0.0);
+            float rimLine = 1.0 - smoothstep(0.0, 1.3 * qpx, inner);
+            s = mix(s, vec3(1.0), rimLine * 0.7 * max(facing, 0.0));
+            // The outermost pixel is a graphite edge: the glass silhouette is as crisp as the ink one.
+            float edge = 1.0 - smoothstep(0.0, qpx, inner);
+            s = mix(s, vec3(0.40, 0.43, 0.48), edge * mix(0.45, 0.8, small));
             col = over(col, clamp(s, 0.0, 1.0), cS);
         }
     } else {

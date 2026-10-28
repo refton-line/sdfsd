@@ -52,7 +52,7 @@ ModalSheet {
             anchors.right: closeButton.left; anchors.rightMargin: 12
             anchors.verticalCenter: badge.verticalCenter
             width: 300
-            options: [{ text: I18n.t("sheet.single"), icon: "keyboard" }, { text: I18n.t("sheet.combo"), icon: "stack" }]
+            options: [{ text: I18n.t("sheet.single"), icon: "keyboard" }, { text: I18n.t("sheet.combo"), icon: "keyCombo" }]
             currentIndex: picker.combination ? 1 : 0
             onActivated: index => picker.engine.captureCombination = index === 1
         }

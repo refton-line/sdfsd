@@ -168,13 +168,13 @@ Item {
                     onValueModified: v => page.engine.launchDelaySec = v
                 }
                 AppButton {
-                    objectName: "resetBindings"
+                    objectName: "resetCountdown"
                     anchors.verticalCenter: parent.verticalCenter
                     compact: !Theme.isGlass
                     iconName: "reset"
                     text: I18n.t("keys.reset")
-                    enabled: !page.engine.active
-                    onClicked: page.engine.resetBindings()
+                    enabled: !page.engine.active && page.engine.launchDelaySec !== page.engine.defaultLaunchDelaySec
+                    onClicked: page.engine.resetLaunchDelay()
                 }
             }
         }

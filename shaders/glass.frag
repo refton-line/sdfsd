@@ -58,7 +58,9 @@ void main() {
         vec2 split = n * dispersion * curve * scale / backdropSize;
         vec3 clear = vec3(texture(sharp, uv + split).r, texture(sharp, uv).g, texture(sharp, uv - split).b);
         vec3 soft = vec3(texture(frosted, uv + split).r, texture(frosted, uv).g, texture(frosted, uv - split).b);
-        col = mix(clear, soft, frost * (1.0 - 0.7 * curve));
+        // The bezel stays partly frosted: thin bright lines behind the edge would otherwise turn
+        // into sharp specks.
+        col = mix(clear, soft, frost * (1.0 - 0.35 * curve));
         col = mix(col, tint.rgb, tint.a);
     } else {
         // Nothing behind to refract: the tint carries a soft vertical sheen instead.

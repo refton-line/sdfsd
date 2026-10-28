@@ -63,6 +63,12 @@ int main(int argc, char **argv) {
     check(!e.applyBindings(46, 3, 66, 0), "CtrlAltDel rejected");
     check(e.resetBindings(), "reset bindings");
     check(e.startKey() == 0x75 && e.stopKey() == 0x77, "reset defaults");
+    e.setLaunchDelaySec(7);
+    check(e.launchDelaySec() == 7, "countdown set");
+    e.resetLaunchDelay();
+    check(e.launchDelaySec() == e.defaultLaunchDelaySec() && e.defaultLaunchDelaySec() == 3,
+          "countdown reset to default");
+    check(e.startKey() == 0x75 && e.stopKey() == 0x77, "countdown reset keeps bindings");
     check(e.clicks() == 0 && e.measuredCps() < 0 && e.averageCps() < 0,
           "no fabricated measured rate");
     e.setMode(1);

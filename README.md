@@ -18,7 +18,7 @@ practically tops out around ~1000 CPS. Uncapped throughput is a Blatant feature.
 ## Interface
 Two materials, and switching between them changes the whole app. The new look washes over the old one in a circle that grows from the pointer and has a bright liquid front. Labels are kept to names and values; there are no hint or subtitle lines.
 
-**Logo and launch.** The mark is a five-point star split down the middle: the left half is Liquid Glass that refracts what is behind it, the right half is plain ink. The app icon uses the same split, with a frosted-glass | white tile. Launch shows the large split star in the middle of the window; its ink half fills from the bottom up with startup progress. It then flies into the title bar (glass) or the sidebar (solid) and stays there as the logo.
+**Logo and launch.** The mark is a five-point star split down the middle: the left half is Liquid Glass that refracts what is behind it, the right half is plain ink. The app icon uses the same split, with a frosted-glass | white tile. Launch starts softly: the plain window warms up into the wallpaper while the star fades in and its ink half fills from the bottom up; then it flies into the title bar (glass) or the sidebar (solid) and stays there as the logo. Closing plays the same story backwards (the star returns to the centre, drains and fades). Minimize sinks the UI toward the taskbar; maximize and restore grow or shrink the UI from where the window was.
 
 | | **Liquid Glass** (iOS 26/27) | **Solid** (iOS 14) |
 |---|---|---|
@@ -37,7 +37,7 @@ Two materials, and switching between them changes the whole app. The new look wa
 ## Hotkeys and profiles
 The physical-key binding engine from 0.4.x is unchanged: Raw Input, 1–3 keys per shortcut, up to 8
 alternatives each for start and stop, side-specific Ctrl/Alt/Shift, AltGr and PrintScreen. Defaults
-are F6 to start and F8 to stop. Profiles are JSON (format `light-clicker`, v4). Profiles from earlier versions
+are F6 to start and F8 to stop. **Reset** next to the countdown puts the countdown back to its default (3 s); it does not touch shortcuts. Profiles are JSON (format `light-clicker`, v4). Profiles from earlier versions
 (v1–v4) still load: an old fixed interval becomes Blatant at the same rate.
 
 ## Safety behaviour

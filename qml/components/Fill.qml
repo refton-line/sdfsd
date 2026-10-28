@@ -25,7 +25,8 @@ Item {
             inset: fill.inset
             frost: fill.frost
             magnify: fill.magnify
-            rim: fill.inset ? 0.55 : 0.85
+            rim: fill.inset ? 0.4 : 0.85
+            dispersion: fill.inset ? 0.5 : 1.2
             tintColor: Qt.rgba(fill.color.r, fill.color.g, fill.color.b,
                                fill.color.a > 0.98 ? fill.strength
                                : fill.color.a < 0.3 ? fill.color.a * (fill.inset ? 1.0 : 2.0) : fill.color.a)

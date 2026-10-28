@@ -22,6 +22,7 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     Q_PROPERTY(QVariantList startBindings READ startBindings NOTIFY changed)
     Q_PROPERTY(QVariantList stopBindings READ stopBindings NOTIFY changed)
     Q_PROPERTY(int launchDelaySec READ launchDelaySec WRITE setLaunchDelaySec NOTIFY changed)
+    Q_PROPERTY(int defaultLaunchDelaySec READ defaultLaunchDelaySec CONSTANT)
     Q_PROPERTY(int mode READ mode WRITE setMode NOTIFY changed)
     Q_PROPERTY(double cps READ cps WRITE setCps NOTIFY changed)
     Q_PROPERTY(int variance READ variance WRITE setVariance NOTIFY changed)
@@ -67,6 +68,9 @@ class ClickController final : public QObject, public QAbstractNativeEventFilter 
     QVariantList startBindings() const { return bindingList(false); }
     QVariantList stopBindings() const { return bindingList(true); }
     int launchDelaySec() const { return m_config.launchDelay; }
+    int defaultLaunchDelaySec() const { return ClickConfig{}.launchDelay; }
+    // Countdown back to its default; bindings are untouched.
+    Q_INVOKABLE void resetLaunchDelay() { setLaunchDelaySec(defaultLaunchDelaySec()); }
     void setLaunchDelaySec(int);
     Q_INVOKABLE bool applyBindingSlot(bool stop, int index, int key, int mods);
     Q_INVOKABLE bool removeBinding(bool stop, int index);

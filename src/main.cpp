@@ -40,6 +40,11 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("clickEngine", &clicks);
     engine.rootContext()->setContextProperty("windowEffects", &effects);
     engine.rootContext()->setContextProperty("uiCapture", app.arguments().contains("--capture"));
+    // Screenshot tours on slow software GL can stretch window animations to catch them part-way.
+    const int motionScale = app.arguments().contains("--capture")
+                                ? qMax(1, qEnvironmentVariableIntValue("LIGHTCLICKER_MOTION_SCALE"))
+                                : 1;
+    engine.rootContext()->setContextProperty("motionScale", motionScale);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
         [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);

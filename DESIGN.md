@@ -50,8 +50,10 @@ bright liquid band that bends the old image outward as it passes.
 - Springs (`SpringAnimation`) for spatial glass motion. Critically damped springs or ease-out curves for solid.
 - Outgoing content leaves quickly (110–150 ms). Incoming content arrives in 260–380 ms and starts at once, with no gap between the two.
 - Continuous effects (island waveform, countdown ring, pulse, tab-bar lens speed) are evaluated every frame from a running clock rather than as looping keyframes, so they never visibly stop or step.
-- Launch: the split star loads at the window centre; its ink half fills from the bottom up with startup progress. It then flies (820 ms, in-out cubic) into the title bar or the sidebar and becomes the logo. The island grows from a dot in the title bar, and navigation, content and controls follow in a stagger.
-- Close: input stops first. Content sinks and fades, the island collapses to a dot, then the window closes.
+- Launch: nothing snaps at the start. The plain window warms up into the wallpaper while the star fades and grows in (720 ms, in-out sine); its ink half fills from the bottom up, paced so it never jumps. The star then flies (860 ms, in-out cubic) into the title bar or the sidebar and becomes the logo. The island grows out of the title bar half-way, and navigation, content and controls follow in a stagger where every part eases in and out on its own (smoothstep over an in-out cubic).
+- Close mirrors the launch. Input stops first. The UI folds away in reverse order, the island collapses, the star flies back to the centre, its ink drains from the top, then the star and the wallpaper fade into the plain window, which closes (about 0.9 s).
+- Minimize: the UI sinks toward the taskbar and fades (300 ms) while the star stays, so the taskbar preview shows the logo; the window then minimizes. When it comes back, the UI rises into place again.
+- Maximize and restore: the UI is laid out for the new size at once but starts drawn where the old window was, then grows (or shrinks) into place (440 ms) over the wallpaper, which fills the new size immediately.
 
 ## Dynamic Island
 One capsule (`DynamicIsland.qml`), smoked Liquid Glass on glass and black on solid, on springs (`spring 3.3, damping 0.25`) with a
@@ -66,16 +68,18 @@ moving capsule, so nothing pokes out mid-morph and no textures are reallocated.
 ## Icons
 Vector paths (`qml/components/Icons.js`) rendered with Qt Quick Shapes, tinted at runtime. Every
 place has its own glyph: navigation (cursor, keyboard, stack, drop, globe), modes (hand, bolt),
+shortcut kinds (keyboard for a single key, two joined keycaps for a combination),
 materials (sparkle, square), profile actions (check, pencil, duplicate, export, trash, import,
 folder), window chrome, and status (warning, check circle).
 
 ## Logo
 `shaders/mark.frag` draws the mark: a rounded five-point star, point up (an exact distance field
 after Inigo Quilez's `sdStar5`, notch radius 0.5 of the tip radius), lowered slightly so it sits
-centred. The split runs through the top tip and the bottom notch. Left of the split it is Liquid
-Glass: it refracts the stage behind it and has a lit bezel, a two-sided rim and a contact shadow.
-Right of the split it is solid `#1d1d1f`. Below 60 px the star gets chubbier, with softer tips and
-a graphite edge on the glass half, so it stays legible in the title bar. `AppMark.qml` wraps it;
+centred. The split runs through the top tip and the bottom notch. Both halves share one silhouette
+and one soft shadow, so the star reads symmetric. Left of the split it is grey-tinted Liquid Glass:
+a frosted body with sharp refraction only in the bezel, lit from above, with a one-pixel graphite
+edge as crisp as the ink edge. Right of the split it is solid `#1d1d1f`. Below 60 px the star gets
+chubbier with softer tips, and the glass half turns a mid grey so it weighs the same as the ink half. `AppMark.qml` wraps it;
 during launch `progress` fills the ink half from the bottom up, and the unfilled part waits as a
 faint star. The Windows icon (`assets/app.ico`, 16–256 px) and the window icon are rendered from
 the same shader by `scripts/render-icon.sh` and `tools/icon/RenderIcon.qml`, with a squircle tile
