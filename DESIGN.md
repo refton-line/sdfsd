@@ -73,7 +73,9 @@ hotkey start in another window sounds the same as the button. Settings → Sound
 sets the volume in 10 % steps (gain = level^1.5); the switch that turns sounds off still clicks.
 Windows plays through XAudio2 2.9 (`xaudio2_9.dll`, loaded from System32) on a dedicated thread: the
 UI only queues cues, a cue that waited over 150 ms is dropped rather than played late, and a lost
-or changed audio device is reopened on the next cue. Other platforms are silent.
+or changed audio device is reopened on the next cue. Nothing is opened while MMDevAPI reports no
+default output device (Wine's XAudio2 crashes in `CreateMasteringVoice` then); sounds start once a
+device appears. Other platforms are silent.
 `FAKECLICKER_SOUND_LOG=<file>` records each cue with its time for QA.
 
 ## Dynamic Island

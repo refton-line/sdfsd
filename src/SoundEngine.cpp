@@ -86,9 +86,27 @@ class SoundOutput final : public IXAudio2EngineCallback {
         if (SUCCEEDED(com))
             CoUninitialize();
     }
+    // With no output device Windows fails CreateMasteringVoice, but Wine's XAudio2 crashes in it
+    // (divide by zero), so ask MMDevAPI first.
+    static bool hasOutputDevice() {
+        static const CLSID enumeratorClass = {0xBCDE0395, 0xE52F, 0x467C, {0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E}};
+        static const IID enumeratorInterface = {0xA95664D2, 0x9614, 0x4F35, {0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6}};
+        IMMDeviceEnumerator *devices = nullptr;
+        if (FAILED(CoCreateInstance(enumeratorClass, nullptr, CLSCTX_ALL, enumeratorInterface,
+                                    reinterpret_cast<void **>(&devices))))
+            return false;
+        IMMDevice *device = nullptr;
+        const bool found = SUCCEEDED(devices->GetDefaultAudioEndpoint(eRender, eConsole, &device)) && device;
+        if (device)
+            device->Release();
+        devices->Release();
+        return found;
+    }
     bool open() {
         m_opened = Clock::now();
         m_lost = false;
+        if (!hasOutputDevice())
+            return false;
         // xaudio2_9 ships with Windows 10 and 11; load it from System32 only.
         if (!m_dll)
             m_dll = LoadLibraryExW(L"xaudio2_9.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);

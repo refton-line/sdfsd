@@ -27,12 +27,16 @@
 - Wine 9.0 smoke run (Xvfb + Mesa): the packaged `FakeClicker.exe --capture` finished the same 41-screen
   tour with exit code 0. Against the Linux screenshots, Hotkeys and Settings differ by 0 px and the
   other compared screens by under 1 % (anti-aliasing). Contact sheet: `screenshots/sheets/windows-wine.png`.
-- Wine audio: with a PulseAudio null sink recorded during the tour, every logged cue (11) was found in
-  the recording by cross-correlation with its WAV (r = 0.60–1.00), so the XAudio2 path really plays
-  the right sounds. Under the tour's constant software rendering on 2 vCPUs the Wine/PulseAudio chain
-  dropped short stretches (exact-zero gaps inside some cues, different on every run, also with
-  `QT_QUICK_BACKEND=software`); the same cue played clean in other places, which points at the
-  environment, not at the playback code.
+- Wine audio, recorded from a PulseAudio null sink: every cue after launch was found in the recording
+  by cross-correlation with its WAV (r = 0.60–1.00, three full tours). The two launch clacks reached
+  the recording in 3 of 5 runs; a Wine trace shows XAudio2 received them on time (`SubmitSourceBuffer`
+  at the logged moments), so those misses and the short exact-zero gaps inside some cues come from
+  the Wine/PulseAudio stream under the tour's full CPU load (2 vCPU, software rendering), not from
+  the playback code. The same cue played clean elsewhere, also with `QT_QUICK_BACKEND=software`.
+- No audio device: Wine's XAudio2 crashed inside `CreateMasteringVoice` (divide by zero in
+  `xaudio2_9.dll`) when neither PulseAudio nor ALSA had an output. Found by the final check and fixed
+  by asking MMDevAPI for a default output device first; the packaged tour now finishes with no device
+  (exit 0, 41 screens, sounds stay off) and with one (sounds play).
 
 ## Not verified
 Not run on real Windows 10/11; Wine is not Windows. Real `SendInput` delivery and rates, Raw Input
