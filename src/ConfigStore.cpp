@@ -1,12 +1,12 @@
 #include "ConfigStore.h"
 #include "ClickController.h"
+#include "Storage.h"
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QSaveFile>
-#include <QStandardPaths>
 #include <QUuid>
 namespace {
 bool validName(const QString &name) {
@@ -20,7 +20,7 @@ bool validName(const QString &name) {
 } // namespace
 ConfigStore::ConfigStore(ClickController *engine, QObject *parent)
     : QObject(parent), m_engine(engine) {
-    m_directory = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/configs";
+    m_directory = Storage::profiles();
     if (!QDir().mkpath(m_directory)) {
         m_failed = true;
         m_notice = "folderUnavailable";

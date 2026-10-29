@@ -10,13 +10,14 @@ ApplicationWindow {
     objectName: "mainWindow"
     visible: true
     title: "Fake Clicker"
-    readonly property real fit: Math.min(1, (Screen.desktopAvailableWidth - 48) / Theme.baseWidth, (Screen.desktopAvailableHeight - 48) / Theme.baseHeight)
+    readonly property real fit: Math.min(1, (Screen.desktopAvailableWidth - 48) / Theme.baseWidth, (Screen.desktopAvailableHeight - 48 - (startupSystemFrame ? 40 : 0)) / Theme.baseHeight)
     width: uiCapture ? Theme.baseWidth : Math.round(Theme.baseWidth * fit)
     height: uiCapture ? Theme.baseHeight : Math.round(Theme.baseHeight * fit)
     minimumWidth: Math.min(960, width)
     minimumHeight: Math.min(640, height)
     color: Theme.canvas
-    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint | Qt.WindowSystemMenuHint
+    // Opens with the frame of the last session; setSystemFrame() switches it live.
+    flags: startupSystemFrame ? Qt.Window : Qt.Window | Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint | Qt.WindowSystemMenuHint
 
     Settings {
         id: prefs
@@ -25,7 +26,8 @@ ApplicationWindow {
         property bool islandOverlay: true
         property bool soundsOn: true
         property int soundVolume: 70
-    }
+            property bool systemFrame: true
+        }
     Binding { target: sounds; property: "enabled"; value: prefs.soundsOn }
     Binding { target: sounds; property: "volume"; value: prefs.soundVolume }
 
@@ -40,6 +42,8 @@ ApplicationWindow {
     property real languageFade: 1
     property string pendingLanguage: ""
     readonly property bool maximized: visibility === Window.Maximized
+    // The standard Windows title bar (default) or the app's own with its window buttons.
+    readonly property bool systemFrame: prefs.systemFrame
     readonly property bool engineActive: clickEngine.active
     property bool lingering: false
     onActiveChanged: Theme.animating = active || uiCapture
@@ -64,6 +68,10 @@ ApplicationWindow {
     }
     function setSoundVolume(value) {
         prefs.soundVolume = Math.max(10, Math.min(100, Math.round(value / 10) * 10));
+    }
+    function setSystemFrame(value) {
+        prefs.systemFrame = !!value;
+        windowEffects.setCustomFrame(win, !prefs.systemFrame);
     }
     // Native commands so Windows plays its own minimize/maximize/restore animations.
     function toggleMaximized() {
@@ -199,6 +207,7 @@ ApplicationWindow {
         readonly property bool overlayOn: prefs.islandOverlay
         readonly property bool soundOn: prefs.soundsOn
         readonly property int volume: prefs.soundVolume
+        readonly property bool frameOn: prefs.systemFrame
         onCpsChanged: say("gauge", I18n.t("section.rate"), I18n.rate(cps) + " " + I18n.t("cps"))
         onButtonChanged: say("mouse", I18n.t("button"), I18n.t("button." + button))
         onVarianceChanged: say("wave", I18n.t("variance"), I18n.t("variance." + variance))
@@ -212,6 +221,7 @@ ApplicationWindow {
         onOverlayOnChanged: say(overlayOn ? "overlay" : "overlayOff", I18n.t("look.island"), I18n.t(overlayOn ? "on" : "off"), overlayOn ? "on" : "off")
         onSoundOnChanged: say(soundOn ? "volume" : "volumeOff", I18n.t("sound.effects"), I18n.t(soundOn ? "on" : "off"), soundOn ? "on" : "off")
         onVolumeChanged: say("volume", I18n.t("sound.volume"), volume + " %")
+        onFrameOnChanged: say("winMax", I18n.t("look.frame"), I18n.t(frameOn ? "on" : "off"), frameOn ? "on" : "off")
     }
     KeyboardSheet {
         id: keyboard
@@ -240,6 +250,7 @@ ApplicationWindow {
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton
+                enabled: !win.systemFrame     // the Windows title bar moves the window itself
                 onPressed: win.startSystemMove()
                 onDoubleClicked: win.toggleMaximized()
             }
@@ -268,6 +279,7 @@ ApplicationWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 2
                 opacity: win.reveal
+                visible: !win.systemFrame
                 AppButton { kind: "plain"; compact: true; width: 36; height: 32; iconName: "winMin"; iconSize: 15; Accessible.name: I18n.t("win.minimize"); onClicked: win.minimizeWindow() }
                 AppButton { objectName: "maximizeButton"; kind: "plain"; compact: true; width: 36; height: 32; iconName: win.maximized ? "winRestore" : "winMax"; iconSize: 15; Accessible.name: I18n.t(win.maximized ? "win.restore" : "win.maximize"); onClicked: win.toggleMaximized() }
                 AppButton {
@@ -316,10 +328,12 @@ ApplicationWindow {
                 SettingsPage {
                     anchors.fill: parent
                     language: I18n.language
+                    systemFrame: prefs.systemFrame
                     islandOverlay: prefs.islandOverlay
                     soundsOn: prefs.soundsOn
                     soundVolume: prefs.soundVolume
                     onLanguageRequested: code => win.setLanguage(code)
+                    onSystemFrameRequested: value => win.setSystemFrame(value)
                     onIslandOverlayRequested: value => win.setIslandOverlay(value)
                     onSoundsRequested: value => win.setSounds(value)
                     onSoundVolumeRequested: value => win.setSoundVolume(value)
@@ -418,7 +432,7 @@ ApplicationWindow {
             y: onBottom ? win.height - (corner ? 8 : 5) : onTop ? 0 : 8
             width: onLeft || onRight ? (corner ? 8 : 5) : win.width - 16
             height: onTop || onBottom ? (corner ? 8 : 4) : win.height - 16
-            enabled: !win.maximized
+            enabled: !win.maximized && !win.systemFrame
             hoverEnabled: true
             cursorShape: modelData.c
             onPressed: win.startSystemResize(modelData.e)

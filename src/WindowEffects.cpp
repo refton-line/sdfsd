@@ -58,53 +58,65 @@ void WindowEffects::roundCorners(QWindow *window) {
 }
 #ifdef Q_OS_WIN
 namespace {
-// The caption and thick frame exist only for the window manager: WM_NCCALCSIZE gives the whole
-// window to the client, and a maximized window is fitted to the work area (Windows would otherwise
-// push the invisible frame off-screen and the content with it).
+// Custom frame only: the caption and thick frame exist for the window manager alone, so
+// WM_NCCALCSIZE gives the whole window to the client, and a maximized window is fitted to the work
+// area (Windows would otherwise push the invisible frame off-screen and the content with it).
 class FrameFilter final : public QAbstractNativeEventFilter {
   public:
-    explicit FrameFilter(HWND hwnd) : m_hwnd(hwnd) {}
+    HWND hwnd = nullptr;
+    bool enabled = false;
     bool nativeEventFilter(const QByteArray &type, void *message, qintptr *result) override {
-        if (type != "windows_generic_MSG")
+        if (!enabled || type != "windows_generic_MSG")
             return false;
         auto *msg = static_cast<MSG *>(message);
-        if (msg->hwnd != m_hwnd || msg->message != WM_NCCALCSIZE)
+        if (msg->hwnd != hwnd || msg->message != WM_NCCALCSIZE)
             return false;
-        if (msg->wParam && IsZoomed(m_hwnd)) {
+        if (msg->wParam && IsZoomed(hwnd)) {
             auto *params = reinterpret_cast<NCCALCSIZE_PARAMS *>(msg->lParam);
             MONITORINFO info{};
             info.cbSize = sizeof(info);
-            if (GetMonitorInfoW(MonitorFromWindow(m_hwnd, MONITOR_DEFAULTTONEAREST), &info))
+            if (GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &info))
                 params->rgrc[0] = info.rcWork;
         }
         *result = 0;
         return true;
     }
-
-  private:
-    HWND m_hwnd;
 };
+FrameFilter &frameFilter() {
+    static FrameFilter *filter = [] {
+        auto *created = new FrameFilter;
+        qApp->installNativeEventFilter(created);
+        return created;
+    }();
+    return *filter;
+}
 } // namespace
 #endif
-void WindowEffects::enableNativeFrame(QWindow *window) {
-#ifdef Q_OS_WIN
+void WindowEffects::setCustomFrame(QWindow *window, bool custom) {
     if (!window)
         return;
-    const HWND hwnd = reinterpret_cast<HWND>(window->winId());
-    static FrameFilter *filter = nullptr;
-    if (!filter) {
-        filter = new FrameFilter(hwnd);
-        qApp->installNativeEventFilter(filter);
-    }
-    const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
-    SetWindowLongPtrW(hwnd, GWL_STYLE,
-                      style | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
-    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
-                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-    m_nativeFrame = true;
-#else
-    Q_UNUSED(window)
+    const QSize client = window->size();
+    const bool maximized = window->windowStates() & (Qt::WindowMaximized | Qt::WindowFullScreen);
+#ifdef Q_OS_WIN
+    FrameFilter &filter = frameFilter();
+    filter.hwnd = reinterpret_cast<HWND>(window->winId());
+    // Set before the flags change, so a standard frame is never computed away.
+    filter.enabled = custom;
 #endif
+    window->setFlags(custom ? Qt::Window | Qt::FramelessWindowHint | Qt::WindowMinMaxButtonsHint | Qt::WindowSystemMenuHint
+                            : Qt::Window);
+#ifdef Q_OS_WIN
+    if (custom) {
+        const LONG_PTR style = GetWindowLongPtrW(filter.hwnd, GWL_STYLE);
+        SetWindowLongPtrW(filter.hwnd, GWL_STYLE,
+                          style | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+    }
+    SetWindowPos(filter.hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+#endif
+    if (!maximized && window->size() != client)
+        window->resize(client);
+    m_nativeFrame = custom;
 }
 bool WindowEffects::minimize(QWindow *window) {
 #ifdef Q_OS_WIN

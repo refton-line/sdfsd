@@ -10,8 +10,8 @@ Item {
     readonly property bool blatant: engine.mode === 1
     readonly property var presets: blatant ? [20, 50, 100, 250, 500, 1000] : [8, 10, 12, 14, 16, 20]
     readonly property real gap: Theme.gap
-    readonly property real rightWidth: 300
-    readonly property real leftWidth: width - rightWidth - gap
+    // Countdown, live rate, clicks and Start/Stop are on the Dynamic Island.
+    readonly property real leftWidth: width
 
     // Step size grows with the rate so both 12 and 5000 CPS are a few presses away.
     function nudge(up) {
@@ -105,7 +105,6 @@ Item {
     // ── Rate ────────────────────────────────────────────────────────────────
     Panel {
         id: rateCard
-        title: I18n.t("section.rate")
         y: modeCard.height + page.gap
         width: page.leftWidth
         height: page.height - modeCard.height - optionsCard.height - 2 * page.gap
@@ -246,6 +245,41 @@ Item {
             id: options
             width: parent.width
             SettingRow {
+                icon: "target"; title: I18n.t("target")
+                // Opens the window picker with live thumbnails.
+                T.AbstractButton {
+                    id: targetButton
+                    objectName: "targetButton"
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 258; height: 36
+                    hoverEnabled: true
+                    focusPolicy: Qt.StrongFocus
+                    enabled: !page.locked
+                    opacity: enabled ? 1 : 0.4
+                    Accessible.name: I18n.t("target") + ": " + (page.engine.targetWindow === "" ? I18n.t("target.any") : page.engine.targetTitle)
+                    onClicked: if (page.windowSheet) { sounds.play("tap"); page.windowSheet.choose(); }
+                    background: Rectangle {
+                        radius: Theme.controlRadius
+                        color: targetButton.pressed ? Theme.controlActive : targetButton.hovered ? Theme.control : Theme.raised
+                        border.width: targetButton.visualFocus ? 2 : 1
+                        border.color: targetButton.visualFocus ? Theme.focusRing : Theme.hairline
+                    }
+                    contentItem: Item {
+                        Label {
+                            anchors.left: parent.left; anchors.leftMargin: 12
+                            anchors.right: targetChevron.left; anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            horizontalAlignment: Text.AlignRight
+                            text: page.engine.targetWindow === "" ? I18n.t("target.any") : page.engine.targetTitle
+                            elide: Text.ElideRight
+                            color: page.engine.targetWindow === "" ? Theme.inkSoft : Theme.ink
+                            font.pixelSize: 13; font.weight: Font.DemiBold
+                        }
+                        Icon { id: targetChevron; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; name: "chevron"; size: 14; color: Theme.faint }
+                    }
+                }
+            }
+            SettingRow {
                 icon: "mouse"; title: I18n.t("button")
                 SegmentedControl {
                     objectName: "buttonSegment"
@@ -323,259 +357,6 @@ Item {
                     zeroText: "∞"
                     Accessible.name: I18n.t("limit.clicks")
                     onValueModified: v => page.engine.countLimit = v
-                }
-            }
-        }
-    }
-
-    // ── Session ─────────────────────────────────────────────────────────────
-    Panel {
-        id: session
-        title: I18n.t("section.session")
-        x: page.leftWidth + page.gap
-        width: page.rightWidth
-        height: page.height
-        readonly property bool running: page.engine.state === "running" || page.engine.state === "stopping"
-        readonly property bool armed: page.engine.state === "arming"
-        readonly property color stateColor: armed ? Theme.ink : running ? Theme.modeColor(page.engine.mode) : Theme.faint
-
-        actions: Row {
-            spacing: 8
-            Rectangle {
-                id: stateDot
-                width: 7; height: 7; radius: 3.5
-                anchors.verticalCenter: parent.verticalCenter
-                color: session.stateColor
-                SequentialAnimation on opacity {
-                    running: page.engine.active && Theme.animating
-                    loops: Animation.Infinite
-                    NumberAnimation { to: 0.35; duration: 700; easing.type: Easing.InOutSine }
-                    NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
-                    onRunningChanged: if (!running) stateDot.opacity = 1
-                }
-            }
-            Label {
-                objectName: "sessionStatus"
-                text: I18n.t("state." + page.engine.state)
-                color: page.engine.active ? Theme.ink : Theme.muted
-                font.pixelSize: Theme.small; font.weight: Font.DemiBold
-            }
-        }
-        Item {
-            id: bigRow
-            x: session.pad; y: 0
-            width: parent.width - 2 * session.pad; height: 60
-            Label {
-                id: bigRate
-                anchors.verticalCenter: parent.verticalCenter
-                width: Math.min(implicitWidth, parent.width - bigUnit.implicitWidth - 10)
-                property real shown: session.running ? Math.max(0, page.engine.measuredCps) : page.engine.cps
-                text: I18n.rate(shown)
-                font.pixelSize: 52; font.weight: Font.Bold
-                font.letterSpacing: -1.8
-                font.features: { "tnum": 1 }
-                fontSizeMode: Text.HorizontalFit
-                minimumPixelSize: 22
-                color: session.running ? Theme.ink : Theme.inkSoft
-            }
-            Label {
-                id: bigUnit
-                anchors.left: bigRate.right; anchors.leftMargin: 8
-                anchors.baseline: bigRate.baseline
-                text: I18n.t("cps")
-                color: Theme.muted
-                font.family: Theme.mono
-                font.pixelSize: 13; font.weight: Font.Medium
-            }
-        }
-        Sparkline {
-            id: spark
-            x: session.pad; y: bigRow.y + bigRow.height + 14
-            width: parent.width - 2 * session.pad; height: 72
-            tint: Theme.modeColor(page.engine.mode)
-            ceiling: Math.min(page.engine.cps, 1e9)
-            Timer {
-                interval: 100; repeat: true
-                running: session.running
-                onTriggered: spark.push(Math.max(0, page.engine.measuredCps))
-            }
-            Connections {
-                target: page.engine
-                function onChanged() { if (page.engine.state === "arming" && spark.samples.length) spark.reset(); }
-            }
-        }
-        Column {
-            x: session.pad; y: spark.y + spark.height + 10
-            width: parent.width - 2 * session.pad
-            Repeater {
-                model: [
-                    { icon: "cursor", k: "live.clicks", v: I18n.number(page.engine.clicks, 0) },
-                    { icon: "timer", k: "live.time", v: I18n.duration(page.engine.elapsedSec) },
-                    { icon: "pulse", k: "live.average", v: I18n.rate(page.engine.averageCps) }
-                ]
-                Item {
-                    required property var modelData
-                    required property int index
-                    width: parent.width; height: 38
-                    Rectangle { width: parent.width; height: 1; color: Theme.hairline; visible: index > 0 }
-                    Icon { anchors.verticalCenter: parent.verticalCenter; name: modelData.icon; size: 16; color: Theme.faint }
-                    Label {
-                        x: 26; anchors.verticalCenter: parent.verticalCenter
-                        text: I18n.t(modelData.k)
-                        color: Theme.muted
-                        font.pixelSize: 13
-                    }
-                    Label {
-                        anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-                        text: modelData.v
-                        font.family: Theme.mono
-                        font.pixelSize: 13; font.weight: Font.DemiBold
-                    }
-                }
-            }
-        }
-        // Persistent error until dismissed (the island shows it briefly).
-        Rectangle {
-            id: errorBanner
-            objectName: "generalError"
-            x: 12; width: parent.width - 24
-            anchors.bottom: targetButton.top; anchors.bottomMargin: 8
-            height: Math.max(44, errorText.implicitHeight + 20)
-            radius: Theme.controlRadius
-            color: Theme.tint(Theme.danger, 0.12)
-            border.width: 1
-            border.color: Theme.tint(Theme.danger, 0.35)
-            readonly property bool shown: page.engine.error !== ""
-            property string message: ""
-            onShownChanged: if (shown) message = I18n.msg(page.engine.error)
-            Connections { target: I18n; function onLanguageChanged() { if (errorBanner.shown) errorBanner.message = I18n.msg(page.engine.error); } }
-            opacity: shown ? 1 : 0
-            visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: Theme.base } }
-            Icon { x: 12; anchors.verticalCenter: parent.verticalCenter; name: "warning"; size: 16; color: Theme.dangerText }
-            Label {
-                id: errorText
-                x: 36; anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - 36 - 36
-                text: errorBanner.message
-                wrapMode: Text.WordWrap
-                color: Theme.ink
-                font.pixelSize: Theme.small
-            }
-            AppButton {
-                objectName: "dismissError"
-                kind: "plain"
-                anchors.right: parent.right; anchors.rightMargin: 6
-                anchors.verticalCenter: parent.verticalCenter
-                width: 28; height: 28
-                iconName: "x"; iconSize: 12
-                Accessible.name: I18n.t("dismiss")
-                onClicked: page.engine.dismissError()
-            }
-        }
-        // Target window: opens the window picker.
-        T.AbstractButton {
-            id: targetButton
-            objectName: "targetButton"
-            x: 12; width: parent.width - 24; height: 44
-            anchors.bottom: startButton.top; anchors.bottomMargin: 8
-            hoverEnabled: true
-            focusPolicy: Qt.StrongFocus
-            enabled: !page.locked
-            opacity: enabled ? 1 : 0.45
-            Accessible.name: I18n.t("target") + ": " + (page.engine.targetWindow === "" ? I18n.t("target.any") : page.engine.targetTitle)
-            onClicked: if (page.windowSheet) { sounds.play("tap"); page.windowSheet.choose(); }
-            background: Rectangle {
-                radius: Theme.controlRadius
-                color: targetButton.pressed ? Theme.control : targetButton.hovered ? Theme.raised : "transparent"
-                border.width: targetButton.visualFocus ? 2 : 1
-                border.color: targetButton.visualFocus ? Theme.focusRing : Theme.hairlineStrong
-            }
-            contentItem: Item {
-                Icon { id: targetIcon; x: 14; anchors.verticalCenter: parent.verticalCenter; name: "target"; size: 17; color: page.engine.targetWindow === "" ? Theme.muted : Theme.ink }
-                Label {
-                    anchors.left: targetIcon.right; anchors.leftMargin: 10
-                    anchors.right: targetChevron.left; anchors.rightMargin: 8
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: page.engine.targetWindow === "" ? I18n.t("target.any") : page.engine.targetTitle
-                    elide: Text.ElideRight
-                    color: page.engine.targetWindow === "" ? Theme.inkSoft : Theme.ink
-                    font.pixelSize: Theme.body; font.weight: Font.DemiBold
-                }
-                Icon { id: targetChevron; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; name: "chevron"; size: 14; color: Theme.faint }
-            }
-        }
-        // Start / countdown / stop
-        T.AbstractButton {
-            id: startButton
-            objectName: "startButton"
-            x: 12; width: parent.width - 24; height: 52
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 12
-            hoverEnabled: true
-            focusPolicy: Qt.StrongFocus
-            enabled: page.engine.available || page.engine.active
-            readonly property string phase: page.engine.state
-            readonly property bool armed: phase === "arming"
-            readonly property bool live: phase === "running" || phase === "stopping"
-            readonly property color foreground: startButton.live ? "#FFFFFF" : startButton.armed ? Theme.ink : Theme.inverse
-            Accessible.name: startButton.armed ? I18n.t("cancel") : startButton.live ? I18n.t("stop") : I18n.t("start")
-            onClicked: page.engine.toggle()
-            opacity: enabled ? 1 : 0.35
-            property real progress: 0
-            onArmedChanged: {
-                if (armed) {
-                    progress = 0;
-                    countdownFill.duration = page.engine.launchDelaySec * 1000;
-                    countdownFill.restart();
-                } else {
-                    countdownFill.stop();
-                    progress = 0;
-                }
-            }
-            NumberAnimation { id: countdownFill; target: startButton; property: "progress"; from: 0; to: 1; easing.type: Easing.Linear }
-            background: Item {
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: startButton.live ? (startButton.hovered ? "#E8141A" : Theme.blatant)
-                         : startButton.armed ? Theme.control
-                         : startButton.pressed ? "#D4D4D4" : startButton.hovered ? "#E8E8E8" : Theme.ink
-                    border.width: startButton.armed ? 1 : 0
-                    border.color: Theme.hairlineStrong
-                }
-                // Countdown: a lighter pill grows across while arming.
-                Rectangle {
-                    visible: startButton.armed
-                    height: parent.height
-                    width: Math.max(height, parent.width * startButton.progress)
-                    radius: height / 2
-                    color: Theme.controlActive
-                }
-                Rectangle {
-                    anchors.fill: parent; anchors.margins: -4
-                    radius: height / 2
-                    color: "transparent"
-                    border.width: startButton.visualFocus ? 2 : 0
-                    border.color: Theme.focusRing
-                }
-            }
-            contentItem: Item {
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 10
-                    Icon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        name: startButton.live ? "stop" : startButton.armed ? "x" : "play"
-                        size: 18; stroke: 2.2
-                        color: startButton.foreground
-                    }
-                    Label {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: startButton.armed ? I18n.t("cancel") + "  ·  " + page.engine.countdown
-                              : startButton.live ? I18n.t("stop") : I18n.t("start")
-                        color: startButton.foreground
-                        font.pixelSize: 15; font.weight: Font.Bold
-                    }
                 }
             }
         }

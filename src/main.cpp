@@ -4,6 +4,7 @@
 #include "ClickController.h"
 #include "ConfigStore.h"
 #include "SoundEngine.h"
+#include "Storage.h"
 #include "StartupController.h"
 #include "WindowEffects.h"
 #include "WindowPicker.h"
@@ -15,6 +16,7 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QScreen>
+#include <QSettings>
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <shobjidl.h>
@@ -27,11 +29,12 @@ int main(int argc, char *argv[]) {
     QQuickWindow::setDefaultAlphaBuffer(true);
     QGuiApplication app(argc, argv);
     const bool captureUi = app.arguments().contains("--capture") || app.arguments().contains("--capture-ui-regression") || app.arguments().contains("--capture-text-regression");
-    // Keep the established storage identity: an upgrade does not move or delete user data.
     app.setApplicationDisplayName("Fake Clicker");
-    app.setOrganizationName("ObsidianClick");
-    app.setApplicationName("ObsidianClick");
+    app.setOrganizationName("FakeClicker");
+    app.setApplicationName("FakeClicker");
     app.setApplicationVersion("0.8.0");
+    // One FakeClicker folder for settings and profiles; data of ObsidianClick builds is copied once.
+    Storage::install();
     QFont grayscale = app.font();
     grayscale.setStyleStrategy(QFont::StyleStrategy(QFont::PreferAntialias | QFont::NoSubpixelAntialias));
     grayscale.setHintingPreference(QFont::PreferFullHinting);
@@ -66,6 +69,9 @@ int main(int argc, char *argv[]) {
                                 ? qMax(1, qEnvironmentVariableIntValue("FAKECLICKER_MOTION_SCALE"))
                                 : 1;
     engine.rootContext()->setContextProperty("motionScale", motionScale);
+    // The window opens with the frame of the last session; Settings switches it live.
+    const bool systemFrame = QSettings().value("ui/systemFrame", true).toBool();
+    engine.rootContext()->setContextProperty("startupSystemFrame", systemFrame);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
         [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
@@ -85,12 +91,14 @@ int main(int argc, char *argv[]) {
     if (engine.rootObjects().isEmpty())
         return 1;
     auto *win = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
-    // Center once within this monitor's work area, never bind x/y to changing window dimensions.
-    const QRect workArea = win->screen()->availableGeometry();
-    win->setPosition(workArea.topLeft() + QPoint((workArea.width() - win->width()) / 2,
-                                                (workArea.height() - win->height()) / 2));
     effects.roundCorners(win);
-    effects.enableNativeFrame(win);
+    effects.setCustomFrame(win, !systemFrame);
+    // Center once within this monitor's work area, title bar included; never bind x/y to changing
+    // window dimensions.
+    const QRect workArea = win->screen()->availableGeometry();
+    const QSize outer = win->size().grownBy(win->frameMargins());
+    win->setFramePosition(workArea.topLeft() + QPoint((workArea.width() - outer.width()) / 2,
+                                                     qMax(0, (workArea.height() - outer.height()) / 2)));
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &clicks, &ClickController::stop);
     const int captureIndex = app.arguments().indexOf("--capture");
     if (captureIndex >= 0 && captureIndex + 1 < app.arguments().size())

@@ -1,6 +1,7 @@
 #include "ClickController.h"
 #include "Timing.h"
 #include <QGuiApplication>
+#include <QJsonDocument>
 #include <QSettings>
 #include <QWindow>
 #include <QtConcurrent>
@@ -18,7 +19,12 @@ ClickController::ClickController(QObject *parent) : QObject(parent) {
     QString error;
     ClickConfig loaded;
     if (s.contains("click/config")) {
-        if (Configuration::decode(s.value("click/config").toJsonObject(), loaded, error))
+        // Plain JSON text in the INI file; registry-era builds stored a QJsonObject variant.
+        const QVariant saved = s.value("click/config");
+        const QJsonObject object = saved.typeId() == QMetaType::QString
+                                       ? QJsonDocument::fromJson(saved.toString().toUtf8()).object()
+                                       : saved.toJsonObject();
+        if (Configuration::decode(object, loaded, error))
             m_config = loaded;
         else
             m_error = "savedRejected:" + error;
@@ -65,7 +71,8 @@ ClickController::~ClickController() {
 #endif
 }
 void ClickController::persist() {
-    QSettings().setValue("click/config", QVariant::fromValue(Configuration::encode(m_config)));
+    QSettings().setValue("click/config",
+                         QString::fromUtf8(QJsonDocument(Configuration::encode(m_config)).toJson(QJsonDocument::Compact)));
 }
 bool ClickController::applyConfig(const ClickConfig &c) {
     if (m_active) {

@@ -24,15 +24,18 @@ tracking. All text uses native grayscale rasterisation.
 
 ## Layout
 
-- **Title bar:** skull mark and the `FAKE CLICKER` wordmark on the left, the Dynamic Island in the
-  centre, window controls on the right (close turns red on hover).
+- **Title bar:** the standard Windows title bar by default (dark, via DWM). Under it a header with
+  the skull mark and the `FAKE CLICKER` wordmark on the left and the Dynamic Island in the centre.
+  Settings → Window switches live to the app's own title bar: the same header, draggable, with
+  window controls on the right (close turns red on hover); the client size stays the same.
 - **Sidebar:** Clicker, Hotkeys, Profiles, Settings and nothing else; the keys live on the Hotkeys page.
-- **Pages:** an uppercase title, then panels. Clicker has Mode (with one-line descriptions), Rate,
-  Options (button, variance or hold, time limit, click limit — each on its own labelled row) and
-  a Session panel with live rate, chart, totals, target window and the Start button
-  (white → red Stop while running, graphite with a filling pill while counting down).
-- **Settings:** language, the island-over-other-windows switch, Sound (on/off and volume), and About;
-  clicking the About skull makes it bite.
+- **Pages:** an uppercase title, then panels. Clicker has Mode (with one-line descriptions), Rate and
+  Options (target window, button, variance or hold, time limit, click limit — each on its own
+  labelled row). There is no session panel: countdown, live rate, clicks, time and Start/Stop are
+  on the Dynamic Island.
+- **Settings:** two columns — Language, Window (standard Windows title bar on/off) and the
+  island-over-other-windows switch; Sound (on/off and volume) and About (clicking the skull makes
+  it bite).
 
 ## Logo and launch
 
@@ -48,6 +51,17 @@ snap shut 85 ms, twice) while the bar fills with real startup progress, then the
 the interface fades in. Launch takes about a second; closing is a 150 ms fade. The intro starts on
 the first presented frame so a slow first render never hides the bite. `scripts/render-icon.sh`
 builds `app.ico`/`app-icon.png` from the same SVGs (16/24 px drop the bones).
+
+## Storage
+
+Everything lives in one folder, `%APPDATA%\FakeClicker` (`~/.config/FakeClicker` on Linux):
+`FakeClicker.ini` holds every setting as plain INI (the clicker config as one JSON line under
+`[click]`, interface preferences under `[ui]`), and `configs\` holds the profiles as JSON
+(`"format": "fake-clicker"`, version 4). Nothing is written to the registry. Light clicker and
+earlier Fake Clicker builds stored everything as "ObsidianClick" (registry
+`HKCU\Software\ObsidianClick` and `%LOCALAPPDATA%\ObsidianClick\ObsidianClick\configs`); on the first
+start without `FakeClicker.ini`, `Storage::install` copies those keys and profiles over once and
+leaves the old copy untouched. Profiles in the older formats still import.
 
 ## Sound
 

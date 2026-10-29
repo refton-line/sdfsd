@@ -20,8 +20,11 @@ timer-paced and practically tops out around ~1000 CPS; uncapped throughput is a 
 ## Interface
 - **Launch:** the skull bites twice while the loading bar fills with real startup progress, then the
   interface fades in (about a second). Closing is a short fade.
-- **Layout:** title bar with the skull and wordmark, the island in the centre and window controls;
-  a sidebar with Clicker, Hotkeys, Profiles and Settings; pages with uppercase titles and graphite panels.
+- **Layout:** the standard Windows title bar (Settings → Window switches to the app's own, with its
+  own window buttons); under it the skull, the wordmark and the island in the centre; a sidebar with
+  Clicker, Hotkeys, Profiles and Settings; pages with uppercase titles and graphite panels. The
+  Clicker page holds Mode, Rate and Options (window, button, variance or hold, limits); countdown,
+  live rate, clicks and Start/Stop are on the island.
 - **Colour:** black, graphite and white only. Green marks Legit, red marks Blatant, Stop and errors.
 - **Motion:** short eased transitions (110–260 ms). No springs, bounces, glass or blur.
 - **Sound:** short original cues for actions — a soft tick for buttons and navigation, a two-step
@@ -47,7 +50,9 @@ Raw Input physical-key bindings: 1–3 keys per shortcut, up to 8 alternatives e
 stop, side-specific Ctrl/Alt/Shift, AltGr and PrintScreen. Defaults are F6 to start and F8 to stop.
 **Reset** next to the countdown restores the default 3 s. Profiles are JSON (`"format":
 "fake-clicker"`, version 4); profiles from Light clicker and earlier versions still import. Settings
-and profiles stay where earlier versions kept them, so an upgrade keeps them.
+and profiles live in one folder, `%APPDATA%\FakeClicker` (`FakeClicker.ini` and `configs\`). On the first
+start the app copies them from the old ObsidianClick location (registry and `%LOCALAPPDATA%\ObsidianClick`)
+and leaves the old copy untouched.
 
 ## Safety behaviour
 Clicking runs only while the window that was in front at the end of the countdown keeps focus and

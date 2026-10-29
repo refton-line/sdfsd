@@ -1,7 +1,7 @@
 #include "StartupController.h"
+#include "Storage.h"
 #include <QDir>
 #include <QElapsedTimer>
-#include <QStandardPaths>
 #include <QtConcurrent>
 #ifdef Q_OS_WIN
 #define WIN32_LEAN_AND_MEAN
@@ -34,8 +34,7 @@ void StartupController::start() {
                 },
                 Qt::QueuedConnection);
         };
-        const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-        if (dir.isEmpty() || !QDir().mkpath(dir) || !QDir().mkpath(dir + "/configs")) {
+        if (Storage::root().isEmpty() || !QDir().mkpath(Storage::profiles())) {
             report(0, "settingsFolder");
             return;
         }

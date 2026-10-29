@@ -3,11 +3,11 @@ Fake Clicker 0.8.0
 EN  Extract the WHOLE archive into a new folder and run FakeClicker.exe (DLLs, plugins and qml are required).
     F6 starts, F8 stops. During the countdown, switch to the target window — mouse movement is allowed; input pauses outside the target.
     Legit (green) = human-like rhythm. Blatant (red) = direct, exact, uncapped rate. Click the big number to type any CPS.
-    Hover the island at the top to control the clicker from it. Settings: language, the island over other windows and interface sounds.
+    Hover the island at the top to control the clicker from it. Settings: language, the window title bar, the island over other windows and interface sounds.
     The EXE is unsigned. FakeClickerReceiver.exe counts the clicks it receives, so you can check the real rate.
 
 RU  Распакуйте ВЕСЬ архив в новую папку и запустите FakeClicker.exe (DLL, plugins и qml обязательны).
     F6 запуск, F8 остановка. Во время отсчёта перейдите в нужное окно — мышь можно двигать; вне целевого окна клики временно приостанавливаются.
     Легит (зелёный) = ритм человека. Блатант (красный) = напрямую, точно, без лимита CPS. Нажмите на большое число, чтобы ввести своё значение.
-    Наведите на остров вверху, чтобы управлять кликером прямо из него. «Настройки»: язык, остров поверх окон и звуки интерфейса.
+    Наведите на остров вверху, чтобы управлять кликером прямо из него. «Настройки»: язык, заголовок окна, остров поверх окон и звуки интерфейса.
     EXE не подписан. FakeClickerReceiver.exe считает полученные клики, так можно проверить реальный CPS.

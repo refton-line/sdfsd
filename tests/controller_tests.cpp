@@ -7,6 +7,7 @@
 #include <limits>
 #include "PhysicalKeyboard.h"
 #include "SoundEngine.h"
+#include "Storage.h"
 #include <QDebug>
 #include <QFile>
 #include <QGuiApplication>
@@ -15,12 +16,14 @@
 #include <QKeyEvent>
 #include <QSettings>
 #include <QTemporaryDir>
+#include <QDir>
+#include <QFileInfo>
 #include <QThread>
 int main(int argc, char **argv) {
     QGuiApplication app(argc, argv);
     QTemporaryDir temp;
     qputenv("XDG_CONFIG_HOME", temp.path().toUtf8());
-    app.setOrganizationName("ObsidianTest");
+    app.setOrganizationName("FakeClickerTest");
     app.setApplicationName("Validation");
     QSettings().clear();
     int checks = 0;
@@ -790,6 +793,44 @@ int main(int argc, char **argv) {
     for (const char *example : {"legit-12cps.json", "blatant-1000cps.json"})
         check(store.importFile(QUrl::fromLocalFile(QString(CCLICKER_SOURCE_DIR) + "/examples/" + example)),
               "bundled v4 example imports");
+    // Storage: one folder (INI + configs/); a one-time copy from the ObsidianClick storage.
+    {
+        check(Storage::profiles() == Storage::root() + "/configs", "profiles live in the storage folder");
+        check(QFileInfo(Storage::root()).fileName() == "FakeClickerTest", "storage folder is named after the app");
+        QTemporaryDir old;
+        QSettings legacy(old.filePath("legacy.ini"), QSettings::IniFormat);
+        legacy.setValue("ui/language", "ru");
+        legacy.setValue("ui/islandOverlay", false);
+        legacy.sync();
+        QDir().mkpath(old.filePath("configs"));
+        for (const char *name : {"configs/old.json", "configs/notes.txt"}) {
+            QFile file(old.filePath(name));
+            check(file.open(QIODevice::WriteOnly) && file.write("{}") == 2, "legacy fixture");
+        }
+        QSettings fresh(old.filePath("fresh.ini"), QSettings::IniFormat);
+        fresh.setValue("ui/language", "en");
+        const auto copied = Storage::migrate(legacy, old.filePath("configs"), fresh, old.filePath("new/configs"));
+        check(copied.keys == 1 && fresh.value("ui/language").toString() == "en" &&
+                  fresh.contains("ui/islandOverlay"), "migration copies only missing keys");
+        check(copied.profiles == 1 && QFile::exists(old.filePath("new/configs/old.json")) &&
+                  !QFile::exists(old.filePath("new/configs/notes.txt")), "migration copies JSON profiles");
+        check(QFile::exists(old.filePath("configs/old.json")) && legacy.contains("ui/language"),
+              "migration keeps the old data");
+        const auto again = Storage::migrate(legacy, old.filePath("configs"), fresh, old.filePath("new/configs"));
+        check(again.keys == 0 && again.profiles == 0, "migration copies nothing twice");
+    }
+    // The saved clicker config is readable JSON text; the QJsonObject variant of older builds loads.
+    {
+        e.setCps(37);
+        check(QSettings().value("click/config").typeId() == QMetaType::QString &&
+                  QSettings().value("click/config").toString().contains("\"cps\":37"), "saved config is JSON text");
+        ClickConfig older = e.config();
+        older.cps = 33;
+        QSettings().setValue("click/config", QVariant::fromValue(Configuration::encode(older)));
+        ClickController reloaded;
+        check(reloaded.cps() == 33, "config saved by older builds still loads");
+        e.setCps(12);
+    }
     // Sounds: clicker updates map to cues; every cue is a valid 48 kHz mono PCM WAV.
     {
         using Session = SoundEngine::Session;
