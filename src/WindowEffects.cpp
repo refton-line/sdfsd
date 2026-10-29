@@ -50,8 +50,17 @@ void WindowEffects::roundCorners(QWindow *window) {
     // hairline that matches the interface. Unsupported attributes are ignored on older builds.
     const BOOL dark = TRUE;
     DwmSetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
+    DwmSetWindowAttribute(hwnd, 19, &dark, sizeof(dark)); // same attribute before Windows 10 20H1
     const COLORREF border = RGB(0x24, 0x24, 0x24);
     DwmSetWindowAttribute(hwnd, 34, &border, sizeof(border));
+    // DWMWA_CAPTION_COLOR / DWMWA_TEXT_COLOR (Windows 11): black caption, white title, active or not.
+    const COLORREF caption = RGB(0, 0, 0), text = RGB(0xFF, 0xFF, 0xFF);
+    DwmSetWindowAttribute(hwnd, 35, &caption, sizeof(caption));
+    DwmSetWindowAttribute(hwnd, 36, &text, sizeof(text));
+    // Windows repaints the frame of an active window only when its state changes, so the bar stayed
+    // white until focus left the window. Repaint it now.
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    RedrawWindow(hwnd, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
 #else
     Q_UNUSED(window)
 #endif

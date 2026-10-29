@@ -44,6 +44,8 @@ ApplicationWindow {
     readonly property bool engineActive: clickEngine.active
     property bool lingering: false
     onActiveChanged: Theme.animating = active || uiCapture
+    // Reapply the dark frame once the window is really shown; Windows may reset it on first show.
+    onVisibleChanged: if (visible) windowEffects.roundCorners(win)
 
     function launch() {
         if (launched || exiting || !startup.done || !chomped || pacing < 1)
