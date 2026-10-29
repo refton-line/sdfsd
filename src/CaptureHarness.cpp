@@ -183,7 +183,13 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
     add(52750, [=] { shot("35-notice-mode-legit"); });
     add(54700, [=] { configs->saveNew("Ranked 14"); });
     add(55050, [=] { shot("36-notice-profile-saved"); });
-    add(57000, [=] {
+    add(57000, [=] { call("setSounds", false); });
+    add(57350, [=] { shot("37-notice-sounds-off"); });
+    add(59300, [=] { call("setSounds", true); });
+    add(61200, [=] { call("setSoundVolume", 40); });
+    add(61550, [=] { shot("38-notice-volume"); });
+    add(63500, [=] {
+        call("setSoundVolume", 70);
         engine->applyBindingSlot(false, 0, 117, 0);
         engine->setMouseButton(0);
         engine->setDurationSec(0);
@@ -191,7 +197,7 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
         engine->resetLaunchDelay();
         engine->setTarget("", "");
     });
-    add(59500, [=] {
+    add(66000, [=] {
         win->close();
         burst("99-closing", {40, 90, 140});
     });

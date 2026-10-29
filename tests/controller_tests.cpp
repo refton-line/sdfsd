@@ -6,6 +6,7 @@
 #include <cmath>
 #include <limits>
 #include "PhysicalKeyboard.h"
+#include "SoundEngine.h"
 #include <QDebug>
 #include <QFile>
 #include <QGuiApplication>
@@ -14,6 +15,7 @@
 #include <QKeyEvent>
 #include <QSettings>
 #include <QTemporaryDir>
+#include <QThread>
 int main(int argc, char **argv) {
     QGuiApplication app(argc, argv);
     QTemporaryDir temp;
@@ -788,6 +790,52 @@ int main(int argc, char **argv) {
     for (const char *example : {"legit-12cps.json", "blatant-1000cps.json"})
         check(store.importFile(QUrl::fromLocalFile(QString(CCLICKER_SOURCE_DIR) + "/examples/" + example)),
               "bundled v4 example imports");
+    // Sounds: clicker updates map to cues; every cue is a valid 48 kHz mono PCM WAV.
+    {
+        using Session = SoundEngine::Session;
+        const auto cueFor = [](const Session &before, const Session &now) { return SoundEngine::sessionCues(before, now); };
+        check(cueFor({"idle", 0, ""}, {"arming", 3, ""}) == QStringList{"count"}, "start ticks the countdown");
+        check(cueFor({"arming", 3, ""}, {"arming", 2, ""}) == QStringList{"count"}, "each countdown second ticks");
+        check(cueFor({"arming", 2, ""}, {"arming", 2, ""}).isEmpty(), "a repeated update stays silent");
+        check(cueFor({"arming", 1, ""}, {"running", 0, ""}) == QStringList{"start"}, "countdown end starts");
+        check(cueFor({"running", 0, ""}, {"running", 0, ""}).isEmpty(), "running samples stay silent");
+        check(cueFor({"running", 0, ""}, {"stopping", 0, ""}) == QStringList{"stop"}, "stop sounds at once");
+        check(cueFor({"stopping", 0, ""}, {"idle", 0, ""}).isEmpty(), "stop sounds only once");
+        check(cueFor({"arming", 2, ""}, {"idle", 0, ""}) == QStringList{"stop"}, "a cancelled countdown stops");
+        check(cueFor({"running", 0, ""}, {"idle", 0, ""}) == QStringList{"done"}, "a reached limit finishes");
+        check(cueFor({"running", 0, ""}, {"idle", 0, "targetGone"}) == QStringList{"error"}, "an error replaces the finish");
+        check(cueFor({"idle", 0, "stopFirst"}, {"idle", 0, "stopFirst"}).isEmpty(), "an unchanged error stays silent");
+        for (const QString &cue : SoundEngine::cues()) {
+            QFile wav(QString(CCLICKER_SOURCE_DIR) + "/assets/sounds/" + cue + ".wav");
+            check(wav.open(QIODevice::ReadOnly), "every cue has a WAV");
+            const qsizetype bytes = SoundEngine::pcm(wav.readAll()).size();
+            check(bytes >= 2 * 48 && bytes <= 2 * 48000 * 2, "cue is 48 kHz mono 16-bit PCM, 1 ms to 2 s");
+        }
+        check(SoundEngine::pcm("RIFF\x04\0\0\0WAVEjunk").isEmpty(), "malformed WAV rejected");
+        SoundEngine sound;
+        QStringList heard;
+        QObject::connect(&sound, &SoundEngine::played, [&](const QString &cue) { heard << cue; });
+        sound.play("tap");
+        sound.play("tap");
+        sound.play("nope");
+        sound.setEnabled(false);
+        sound.play("select");
+        sound.preview("switchOff");
+        sound.setEnabled(true);
+        sound.setVolume(0);
+        sound.play("confirm");
+        check(heard == QStringList({"tap", "switchOff"}), "muted, silent, unknown and doubled cues are not played");
+        ClickController live;
+        SoundEngine follower;
+        QStringList sequence;
+        QObject::connect(&follower, &SoundEngine::played, [&](const QString &cue) { sequence << cue; });
+        follower.follow(&live);
+        for (const auto &[state, countdown] : {std::pair{"arming", 2}, {"arming", 1}, {"running", 0}, {"idle", 0}}) {
+            live.presentForCapture(state, 40, 12, countdown, "");
+            QThread::msleep(100);
+        }
+        check(sequence == QStringList({"count", "count", "start", "done"}), "follow() turns clicker updates into cues");
+    }
     QSettings().clear();
     qInfo() << "CONTROLLER_CONFIG_TIMING_PASS" << checks << "assertions";
 }

@@ -2,12 +2,11 @@ import QtQuick
 import QtQuick.Templates as T
 import FakeClicker
 
-// Left navigation under the title bar, with the active hotkeys pinned to the bottom.
+// Left navigation under the title bar.
 Item {
     id: bar
     property var items: []              // [{ text, icon }]
     property int currentIndex: 0
-    property var engine
     signal activated(int index)
     width: Theme.sidebarWidth
 
@@ -28,7 +27,7 @@ Item {
                 readonly property bool selected: bar.currentIndex === index
                 Accessible.role: Accessible.PageTab
                 Accessible.name: modelData.text
-                onClicked: if (!selected) bar.activated(index)
+                onClicked: if (!selected) { sounds.play("tap"); bar.activated(index); }
                 background: Rectangle {
                     radius: Theme.controlRadius
                     color: item.selected ? Theme.control : item.hovered ? Theme.panel : "transparent"
@@ -62,40 +61,4 @@ Item {
         }
     }
 
-    Column {
-        x: 24
-        width: parent.width - 48
-        anchors.bottom: parent.bottom; anchors.bottomMargin: 22
-        spacing: 10
-        Caption { text: I18n.t("nav.hotkeys") }
-        Repeater {
-            model: bar.engine ? [{ key: bar.engine.startLabel, title: I18n.t("keys.start") }, { key: bar.engine.stopLabel, title: I18n.t("keys.stop") }] : []
-            Row {
-                required property var modelData
-                spacing: 10
-                width: parent.width
-                KeyCap {
-                    id: cap
-                    text: modelData.key
-                    size: 22
-                    width: Math.min(implicitWidth, 96)
-                }
-                Label {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - cap.width - 10
-                    elide: Text.ElideRight
-                    text: modelData.title
-                    color: Theme.muted
-                    font.pixelSize: Theme.small
-                }
-            }
-        }
-        Item { width: 1; height: 6 }
-        Label {
-            text: "v" + Qt.application.version
-            color: Theme.faint
-            font.family: Theme.mono
-            font.pixelSize: Theme.caption
-        }
-    }
 }

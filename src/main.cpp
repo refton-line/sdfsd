@@ -3,6 +3,7 @@
 #include <QTimer>
 #include "ClickController.h"
 #include "ConfigStore.h"
+#include "SoundEngine.h"
 #include "StartupController.h"
 #include "WindowEffects.h"
 #include "WindowPicker.h"
@@ -44,6 +45,8 @@ int main(int argc, char *argv[]) {
     StartupController startup;
     ClickController clicks;
     ConfigStore configs(&clicks);
+    SoundEngine sounds;
+    sounds.follow(&clicks);
     WindowEffects effects;
     WindowPicker picker;
     if (captureUi)
@@ -55,6 +58,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("startup", &startup);
     engine.rootContext()->setContextProperty("configs", &configs);
     engine.rootContext()->setContextProperty("clickEngine", &clicks);
+    engine.rootContext()->setContextProperty("sounds", &sounds);
     engine.rootContext()->setContextProperty("windowEffects", &effects);
     engine.rootContext()->setContextProperty("uiCapture", captureUi);
     // Screenshot tours on slow software GL can stretch window animations to catch them part-way.

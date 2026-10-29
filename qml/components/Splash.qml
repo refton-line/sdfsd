@@ -25,6 +25,7 @@ Item {
             id: skull
             objectName: "splashSkull"
             size: 112
+            audible: true
             anchors.horizontalCenter: parent.horizontalCenter
             onChompFinished: splash.chompFinished()
         }

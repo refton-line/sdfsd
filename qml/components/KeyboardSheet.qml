@@ -101,7 +101,7 @@ ModalSheet {
                         width: draftText.implicitWidth + 40
                         hoverEnabled: true
                         Accessible.name: picker.engine.keyName(modelData)
-                        onClicked: picker.choose(modelData)
+                        onClicked: { sounds.play("tap"); picker.choose(modelData); }
                         background: Rectangle { radius: 8; color: draftChip.hovered ? "#E8E8E8" : Theme.ink }
                         contentItem: Item {
                             Label { id: draftText; x: 12; anchors.verticalCenter: parent.verticalCenter; text: picker.engine.keyName(draftChip.modelData); color: Theme.inverse; font.family: Theme.mono; font.pixelSize: 13; font.weight: Font.DemiBold }
@@ -135,7 +135,7 @@ ModalSheet {
                     hoverEnabled: true
                     focusPolicy: Qt.StrongFocus
                     Accessible.name: modelData.t
-                    onClicked: picker.choose(modelData.v)
+                    onClicked: { sounds.play("tap"); picker.choose(modelData.v); }
                     background: Item {
                         anchors.fill: parent
                         anchors.margins: 2.5
@@ -208,7 +208,15 @@ ModalSheet {
                     iconName: "check"
                     text: I18n.t("sheet.apply")
                     enabled: picker.chosenKeys.length > 0
-                    onClicked: if (picker.engine.applyChordSlot(picker.targetBinding === 1, picker.bindingIndex, picker.chosenKeys)) picker.close()
+                    cue: ""
+                    onClicked: {
+                        if (picker.engine.applyChordSlot(picker.targetBinding === 1, picker.bindingIndex, picker.chosenKeys)) {
+                            sounds.play("confirm");
+                            picker.close();
+                        } else {
+                            sounds.play("error");
+                        }
+                    }
                 }
             }
         }

@@ -15,4 +15,5 @@
 - **Inter**, replaced by Geist.
 - **Spring motion with overshoot.** All motion is short and eased (110–260 ms); tests enforce it.
 
-The skull mark, icons and app icon are original vector artwork drawn for this project. No third-party artwork is bundled.
+The skull mark, icons and app icon are original vector artwork drawn for this project. The interface sounds are original too:
+`scripts/render-sounds.py` synthesises them from damped resonances, soft tones and filtered noise. No third-party artwork or audio is bundled.

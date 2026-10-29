@@ -85,7 +85,7 @@ Item {
                 readonly property bool selected: page.selectedId === modelData.id
                 readonly property bool showActions: (hovered || selected || visualFocus) && modelData.valid
                 readonly property int mode: modelData.mode === "blatant" ? 1 : 0
-                onClicked: { page.selectedId = modelData.id; page.selectedName = modelData.name; }
+                onClicked: { sounds.play("tap"); page.selectedId = modelData.id; page.selectedName = modelData.name; }
                 onDoubleClicked: if (modelData.valid && !page.engine.active) page.store.apply(modelData.id)
                 background: Rectangle {
                     radius: Theme.controlRadius
@@ -176,6 +176,8 @@ Item {
                                 iconName: modelData.icon; iconSize: 15
                                 Accessible.name: I18n.t(modelData.tip)
                                 enabled: index !== 0 || !page.engine.active
+                                // Apply and duplicate answer with the store's own result sound.
+                                cue: index === 0 || index === 2 ? "" : "tap"
                                 onClicked: {
                                     page.selectedId = row.modelData.id;
                                     page.selectedName = row.modelData.name;
@@ -268,6 +270,7 @@ Item {
                     kind: "primary"
                     text: I18n.t(nameDialog.renaming ? "profiles.rename" : "profiles.save.short")
                     enabled: nameField.text.trim().length > 0
+                    cue: ""
                     onClicked: {
                         const ok = nameDialog.renaming ? page.store.rename(page.selectedId, nameField.text) : page.store.saveNew(nameField.text);
                         if (ok) nameDialog.close();
@@ -300,6 +303,7 @@ Item {
                     kind: "danger"
                     iconName: "trash"
                     text: I18n.t("profiles.delete")
+                    cue: ""
                     onClicked: if (page.store.remove(page.selectedId)) { page.selectedId = ""; deleteDialog.close(); }
                 }
             }

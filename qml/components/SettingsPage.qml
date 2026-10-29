@@ -2,14 +2,18 @@ import QtQuick
 import QtQuick.Templates as T
 import FakeClicker
 
-// Language, the island overlay and version. The app has a single dark theme, so there is no
-// appearance setting.
+// Language, the island overlay, interface sounds and version. The app has a single dark theme,
+// so there is no appearance setting.
 Item {
     id: page
     property string language: "en"
     property bool islandOverlay: true
+    property bool soundsOn: true
+    property int soundVolume: 70
     signal languageRequested(string code)
     signal islandOverlayRequested(bool value)
+    signal soundsRequested(bool value)
+    signal soundVolumeRequested(int value)
 
     readonly property real columnWidth: Math.min(width, 640)
 
@@ -36,13 +40,13 @@ Item {
                         objectName: "language_" + modelData.code
                         readonly property bool selected: page.language === modelData.code
                         width: languages.width
-                        height: 54
+                        height: 50
                         hoverEnabled: true
                         focusPolicy: Qt.StrongFocus
                         Accessible.role: Accessible.RadioButton
                         Accessible.name: modelData.name
                         Accessible.checked: selected
-                        onClicked: if (!selected) page.languageRequested(modelData.code)
+                        onClicked: if (!selected) { sounds.play("select"); page.languageRequested(modelData.code); }
                         background: Rectangle {
                             radius: Theme.controlRadius
                             color: option.selected ? Theme.control : option.hovered ? Theme.raised : "transparent"
@@ -106,6 +110,50 @@ Item {
         }
 
         Panel {
+            title: I18n.t("settings.sound")
+            width: parent.width
+            height: headerHeight + 2 * Theme.rowHeight + 4
+            Column {
+                width: parent.width
+                SettingRow {
+                    icon: page.soundsOn ? "volume" : "volumeOff"
+                    title: I18n.t("sound.effects")
+                    AppSwitch {
+                        objectName: "soundsSwitch"
+                        anchors.verticalCenter: parent.verticalCenter
+                        audible: false
+                        checked: page.soundsOn
+                        Accessible.name: I18n.t("sound.effects")
+                        // Turning sounds off still clicks; turning them on clicks once they are on.
+                        onToggled: {
+                            if (!checked) sounds.preview("switchOff");
+                            page.soundsRequested(checked);
+                            if (checked) sounds.play("switchOn");
+                            checked = Qt.binding(() => page.soundsOn);
+                        }
+                    }
+                }
+                SettingRow {
+                    icon: "wave"
+                    title: I18n.t("sound.volume")
+                    last: true
+                    enabled: page.soundsOn
+                    Stepper {
+                        objectName: "soundVolume"
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 148
+                        from: 10; to: 100; step: 10
+                        unit: "%"
+                        value: page.soundVolume
+                        cue: ""
+                        // The new level is heard right away.
+                        onValueModified: v => { page.soundVolumeRequested(v); sounds.play("tap"); }
+                    }
+                }
+            }
+        }
+
+        Panel {
             title: I18n.t("settings.about")
             width: parent.width
             height: headerHeight + 76
@@ -113,6 +161,12 @@ Item {
                 id: aboutMark
                 x: Theme.pad; y: 6
                 size: 52
+                audible: true
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: aboutMark.chomp()
+                }
             }
             Column {
                 anchors.left: aboutMark.right; anchors.leftMargin: 16

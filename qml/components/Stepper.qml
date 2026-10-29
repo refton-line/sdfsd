@@ -12,6 +12,7 @@ Item {
     property string unit: ""
     property string zeroText: ""
     property int decimals: 0
+    property string cue: "step"
     signal valueModified(real value)
     implicitWidth: 160
     implicitHeight: 36
@@ -19,8 +20,10 @@ Item {
 
     function commit(v) {
         const bounded = Math.max(from, Math.min(to, v));
-        if (!isNaN(bounded) && bounded !== value)
+        if (!isNaN(bounded) && bounded !== value) {
+            if (cue !== "") sounds.play(cue);
             valueModified(bounded);
+        }
         input.text = Qt.binding(() => stepper.display());
     }
     function display() {

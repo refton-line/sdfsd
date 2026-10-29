@@ -51,9 +51,9 @@ Item {
                     Accessible.role: Accessible.RadioButton
                     Accessible.name: I18n.t(modelData.title)
                     Accessible.checked: selected
-                    onClicked: page.engine.mode = index
-                    Keys.onLeftPressed: page.engine.mode = 0
-                    Keys.onRightPressed: page.engine.mode = 1
+                    onClicked: if (!selected) { sounds.play("select"); page.engine.mode = index; }
+                    Keys.onLeftPressed: if (page.engine.mode !== 0) { sounds.play("select"); page.engine.mode = 0; }
+                    Keys.onRightPressed: if (page.engine.mode !== 1) { sounds.play("select"); page.engine.mode = 1; }
                     opacity: enabled || selected ? 1 : 0.45
                     background: Rectangle {
                         radius: Theme.controlRadius
@@ -171,6 +171,7 @@ Item {
                     Accessible.name: "−"
                     enabled: !page.locked && page.engine.cps > 1
                     autoRepeat: true
+                    cue: "step"
                     onClicked: page.nudge(false)
                 }
                 AppButton {
@@ -180,6 +181,7 @@ Item {
                     Accessible.name: "+"
                     enabled: !page.locked
                     autoRepeat: true
+                    cue: "step"
                     onClicked: page.nudge(true)
                 }
             }
@@ -204,7 +206,7 @@ Item {
                     enabled: !page.locked
                     opacity: enabled ? 1 : 0.4
                     Accessible.name: modelData + " " + I18n.t("cps")
-                    onClicked: page.engine.cps = modelData
+                    onClicked: { if (!selected) sounds.play("select"); page.engine.cps = modelData; }
                     background: Rectangle {
                         radius: 8
                         color: chip.selected ? Theme.ink : chip.hovered ? Theme.control : Theme.raised
@@ -482,7 +484,7 @@ Item {
             enabled: !page.locked
             opacity: enabled ? 1 : 0.45
             Accessible.name: I18n.t("target") + ": " + (page.engine.targetWindow === "" ? I18n.t("target.any") : page.engine.targetTitle)
-            onClicked: if (page.windowSheet) page.windowSheet.choose()
+            onClicked: if (page.windowSheet) { sounds.play("tap"); page.windowSheet.choose(); }
             background: Rectangle {
                 radius: Theme.controlRadius
                 color: targetButton.pressed ? Theme.control : targetButton.hovered ? Theme.raised : "transparent"

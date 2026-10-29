@@ -5,10 +5,12 @@ import FakeClicker
 // Fake Clicker mark: a skull over two crossed bones. The jaw is a separate layer: `jaw` opens the
 // mouth (0 closed, 1 open) and chomp() snaps it shut twice, like a bite. Jaw and cranium carry
 // their own black backing, so the open mouth stays black instead of showing the bones.
+// `audible` adds the clack of the teeth meeting at each snap.
 Item {
     id: mark
     property real size: 28
     property real jaw: 0
+    property bool audible: false
     signal chompFinished()
     width: size
     height: size
@@ -45,9 +47,10 @@ Item {
         id: bite
         NumberAnimation { target: mark; property: "jaw"; to: 1; duration: 130 * motionScale; easing.type: Easing.OutQuad }
         NumberAnimation { target: mark; property: "jaw"; to: 0; duration: 85 * motionScale; easing.type: Easing.InQuad }
+        ScriptAction { script: if (mark.audible) sounds.play("jaw") }
         PauseAnimation { duration: 70 * motionScale }
         NumberAnimation { target: mark; property: "jaw"; to: 1; duration: 130 * motionScale; easing.type: Easing.OutQuad }
         NumberAnimation { target: mark; property: "jaw"; to: 0; duration: 85 * motionScale; easing.type: Easing.InQuad }
-        ScriptAction { script: mark.chompFinished() }
+        ScriptAction { script: { if (mark.audible) sounds.play("jaw2"); mark.chompFinished(); } }
     }
 }

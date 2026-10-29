@@ -79,7 +79,7 @@ Item {
                             enabled: !page.engine.active
                             readonly property bool removable: card.bindings.length > 1
                             Accessible.name: modelData.label
-                            onClicked: page.keyboard.edit(card.index, index)
+                            onClicked: { sounds.play("tap"); page.keyboard.edit(card.index, index); }
                             opacity: enabled ? 1 : 0.5
                             background: Rectangle {
                                 radius: Theme.controlRadius
@@ -124,6 +124,7 @@ Item {
                                 opacity: keyChip.hovered || hovered ? 1 : 0.45
                                 Accessible.name: I18n.t("keys.remove")
                                 enabled: !page.engine.active
+                                cue: "remove"
                                 onClicked: page.engine.removeBinding(card.stopAction, keyChip.index)
                             }
                         }

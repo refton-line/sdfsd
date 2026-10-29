@@ -23,7 +23,11 @@ ApplicationWindow {
         category: "ui"
         property string language: "en"
         property bool islandOverlay: true
+        property bool soundsOn: true
+        property int soundVolume: 70
     }
+    Binding { target: sounds; property: "enabled"; value: prefs.soundsOn }
+    Binding { target: sounds; property: "volume"; value: prefs.soundVolume }
 
     property real reveal: 0           // 0 → 1 once loading is done: the interface fades in
     property real farewell: 0         // 0 → 1 on close: everything fades out
@@ -54,6 +58,12 @@ ApplicationWindow {
     }
     function setIslandOverlay(value) {
         prefs.islandOverlay = !!value;
+    }
+    function setSounds(value) {
+        prefs.soundsOn = !!value;
+    }
+    function setSoundVolume(value) {
+        prefs.soundVolume = Math.max(10, Math.min(100, Math.round(value / 10) * 10));
     }
     // Native commands so Windows plays its own minimize/maximize/restore animations.
     function toggleMaximized() {
@@ -153,6 +163,7 @@ ApplicationWindow {
     Connections {
         target: configs
         function onNoticed(code, ok) {
+            sounds.play(!ok ? "error" : code === "deleted" ? "remove" : "confirm");
             island.notify(ok ? "checkCircle" : "warning", I18n.msg(code), ok ? Theme.islandText : Theme.dangerText);
         }
     }
@@ -186,6 +197,8 @@ ApplicationWindow {
         readonly property string stopKey: clickEngine.stopLabel
         readonly property string target: clickEngine.targetWindow
         readonly property bool overlayOn: prefs.islandOverlay
+        readonly property bool soundOn: prefs.soundsOn
+        readonly property int volume: prefs.soundVolume
         onCpsChanged: say("gauge", I18n.t("section.rate"), I18n.rate(cps) + " " + I18n.t("cps"))
         onButtonChanged: say("mouse", I18n.t("button"), I18n.t("button." + button))
         onVarianceChanged: say("wave", I18n.t("variance"), I18n.t("variance." + variance))
@@ -197,6 +210,8 @@ ApplicationWindow {
         onStopKeyChanged: say("stop", I18n.t("keys.stop"), stopKey, "key")
         onTargetChanged: say("target", I18n.t("target"), target === "" ? I18n.t("target.any") : clickEngine.targetTitle)
         onOverlayOnChanged: say(overlayOn ? "overlay" : "overlayOff", I18n.t("look.island"), I18n.t(overlayOn ? "on" : "off"), overlayOn ? "on" : "off")
+        onSoundOnChanged: say(soundOn ? "volume" : "volumeOff", I18n.t("sound.effects"), I18n.t(soundOn ? "on" : "off"), soundOn ? "on" : "off")
+        onVolumeChanged: say("volume", I18n.t("sound.volume"), volume + " %")
     }
     KeyboardSheet {
         id: keyboard
@@ -259,6 +274,7 @@ ApplicationWindow {
                     objectName: "closeButton"
                     kind: hovered ? "danger" : "plain"
                     compact: true
+                    cue: ""      // the window is gone before a click would finish
                     width: 36; height: 32; iconName: "winClose"; iconSize: 15
                     Accessible.name: I18n.t("win.close")
                     onClicked: win.close()
@@ -273,7 +289,6 @@ ApplicationWindow {
             opacity: win.reveal * win.languageFade
             items: win.navItems
             currentIndex: win.currentPage
-            engine: clickEngine
             onActivated: index => win.currentPage = index
         }
 
@@ -302,8 +317,12 @@ ApplicationWindow {
                     anchors.fill: parent
                     language: I18n.language
                     islandOverlay: prefs.islandOverlay
+                    soundsOn: prefs.soundsOn
+                    soundVolume: prefs.soundVolume
                     onLanguageRequested: code => win.setLanguage(code)
                     onIslandOverlayRequested: value => win.setIslandOverlay(value)
+                    onSoundsRequested: value => win.setSounds(value)
+                    onSoundVolumeRequested: value => win.setSoundVolume(value)
                 }
             }
         }

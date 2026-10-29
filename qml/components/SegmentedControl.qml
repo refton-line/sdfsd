@@ -48,9 +48,9 @@ Item {
                 Accessible.role: Accessible.RadioButton
                 Accessible.name: modelData.text
                 Accessible.checked: seg.currentIndex === index
-                onClicked: if (seg.currentIndex !== index) seg.activated(index)
-                Keys.onLeftPressed: if (index > 0) { seg.activated(index - 1); buttons.itemAt(index - 1).forceActiveFocus(); }
-                Keys.onRightPressed: if (index < seg.options.length - 1) { seg.activated(index + 1); buttons.itemAt(index + 1).forceActiveFocus(); }
+                onClicked: if (seg.currentIndex !== index) { sounds.play("select"); seg.activated(index); }
+                Keys.onLeftPressed: if (index > 0) { sounds.play("select"); seg.activated(index - 1); buttons.itemAt(index - 1).forceActiveFocus(); }
+                Keys.onRightPressed: if (index < seg.options.length - 1) { sounds.play("select"); seg.activated(index + 1); buttons.itemAt(index + 1).forceActiveFocus(); }
                 readonly property bool selected: seg.currentIndex === index
                 contentItem: Item {
                     Row {

@@ -2,9 +2,12 @@ import QtQuick
 import QtQuick.Templates as T
 import FakeClicker
 
-// Monochrome switch: a white track with a black knob when on, graphite when off.
+// Monochrome switch: a white track with a black knob when on, graphite when off. On and off
+// click differently; `audible: false` leaves the sound to the owner.
 T.Switch {
     id: control
+    property bool audible: true
+    onToggled: if (audible) sounds.play(checked ? "switchOn" : "switchOff")
     implicitWidth: 44
     implicitHeight: 24
     hoverEnabled: true

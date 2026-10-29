@@ -69,7 +69,7 @@ ModalSheet {
                         focusPolicy: Qt.StrongFocus
                         Accessible.name: modelData.title
                         readonly property bool selected: sheet.engine.targetWindow === modelData.id
-                        onClicked: { sheet.engine.setTarget(modelData.id, modelData.title); sheet.close(); }
+                        onClicked: { sounds.play("confirm"); sheet.engine.setTarget(modelData.id, modelData.title); sheet.close(); }
                         contentItem: Item {
                             Rectangle {
                                 id: preview

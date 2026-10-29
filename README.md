@@ -24,6 +24,11 @@ timer-paced and practically tops out around ~1000 CPS; uncapped throughput is a 
   a sidebar with Clicker, Hotkeys, Profiles and Settings; pages with uppercase titles and graphite panels.
 - **Colour:** black, graphite and white only. Green marks Legit, red marks Blatant, Stop and errors.
 - **Motion:** short eased transitions (110–260 ms). No springs, bounces, glass or blur.
+- **Sound:** short original cues for actions — a soft tick for buttons and navigation, a two-step
+  click for switches, a step for −/+, countdown ticks, a rising Start, a falling Stop, a chime when
+  a time or click limit ends the run, confirm/remove/error for saves, deletes and failures, and the
+  clack of the skull's teeth on each launch bite. Settings → Sound turns them off or sets the
+  volume (10–100 %). Windows plays them through XAudio2; nothing is played per click.
 
 **Dynamic Island.** Compact views show mode and target CPS, a countdown ring, a live waveform with
 measured CPS, notices, errors and a run summary. **Hover expands it** into a control panel:
@@ -70,6 +75,8 @@ xvfb-run -a build/bin/FakeClicker --capture shots
 FAKECLICKER_MOTION_SCALE=6 xvfb-run -a build/bin/FakeClicker --capture shots-launch
 # App icon from the skull SVGs (needs rsvg-convert and ImageMagick)
 scripts/render-icon.sh
+# Interface sounds into assets/sounds (plain Python, no dependencies)
+python3 scripts/render-sounds.py
 ```
 `FakeClickerReceiver.exe` is a test window that counts the clicks it receives, so you can check the
 real delivered rate on Windows.

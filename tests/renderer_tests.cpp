@@ -12,7 +12,7 @@ int main(int argc,char **argv) {
     CrispIconProvider provider(path);
     int checks=0, renders=0;
     auto check=[&](bool ok,const QString &label) { ++checks; if(!ok) qFatal("RASTER_FAIL: %s",qPrintable(label)); };
-    check(icons.size()==40,"40 distinct glyphs");
+    check(icons.size()==42,"42 distinct glyphs");
     for(const auto &name:icons.keys()) for(int logical:{12,16,20,24,32}) for(double dpr:{1.,1.25,1.5,2.}) for(const QString color:{QString("%23ffffff"),QString("%231d1d1f")}) {
         const int side=qRound(logical*dpr); QSize size;
         const auto image=provider.requestImage(name+"?color="+color+"&stroke=1.8",&size,QSize(side,side));
@@ -39,5 +39,5 @@ int main(int argc,char **argv) {
         }
         ++renders;
     }
-    qInfo("RASTER_ICONS_PASS %d checks; %d renders; 40 glyphs; 12–32 px; DPR 100/125/150/200%%; no corner specks; continuous key outlines",checks,renders);
+    qInfo("RASTER_ICONS_PASS %d checks; %d renders; 42 glyphs; 12–32 px; DPR 100/125/150/200%%; no corner specks; continuous key outlines",checks,renders);
 }

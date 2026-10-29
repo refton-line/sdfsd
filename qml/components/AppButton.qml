@@ -4,9 +4,11 @@ import FakeClicker
 
 // kind: "primary" (white pill, the one call to action), "normal" (graphite), "plain" (no fill
 // until hovered), "danger" (red). Text buttons are pills, icon-only buttons are circles.
-// Hover and press change colour instantly; nothing scales or bounces.
+// Hover and press change colour instantly; nothing scales or bounces. `cue` is the click sound;
+// buttons whose result has its own sound (start, save, delete) clear it.
 T.AbstractButton {
     id: control
+    property string cue: "tap"
     property string iconName
     property string kind: "normal"
     property real iconSize: 16
@@ -26,6 +28,7 @@ T.AbstractButton {
     focusPolicy: Qt.StrongFocus
     Accessible.name: text
     opacity: enabled ? 1 : 0.32
+    onClicked: if (cue !== "") sounds.play(cue)
 
     background: Rectangle {
         radius: height / 2

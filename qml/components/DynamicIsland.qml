@@ -252,7 +252,7 @@ Item {
                                 width: modeSwitch.width / 2; height: modeSwitch.height
                                 hoverEnabled: true
                                 Accessible.name: I18n.t(modelData.key)
-                                onClicked: if (island.engine) island.engine.mode = index
+                                onClicked: if (island.engine && !selected) { sounds.play("select"); island.engine.mode = index; }
                                 readonly property bool selected: island.mode === index
                                 contentItem: Item {
                                     Row {
@@ -335,8 +335,8 @@ Item {
                     x: action.x - 50; y: 76
                     spacing: 8
                     visible: !island.running && !island.arming
-                    DarkRound { objectName: "islandPlus"; glyph: "plus"; enabled: island.engine && !island.engine.active; onClicked: island.nudge(true) }
-                    DarkRound { objectName: "islandMinus"; glyph: "minus"; enabled: island.engine && !island.engine.active && island.engine.cps > 1; onClicked: island.nudge(false) }
+                    DarkRound { objectName: "islandPlus"; glyph: "plus"; enabled: island.engine && !island.engine.active; onClicked: { sounds.play("step"); island.nudge(true); } }
+                    DarkRound { objectName: "islandMinus"; glyph: "minus"; enabled: island.engine && !island.engine.active && island.engine.cps > 1; onClicked: { sounds.play("step"); island.nudge(false); } }
                 }
                 Waveform { visible: island.running; x: action.x - 96; y: 104; bars: 9; height: 34; clock: island.clock; rate: island.shownRate; tint: island.tint }
                 // start / cancel / stop
