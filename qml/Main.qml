@@ -225,24 +225,11 @@ ApplicationWindow {
         anchors.fill: parent
         opacity: 1 - win.farewell
 
-        // Header under the Windows title bar: the skull on the left, the island in the middle.
+        // Header under the Windows title bar: room for the Dynamic Island, centred.
         Item {
             id: titleBar
             width: parent.width
             height: Theme.titleBar
-            Row {
-                id: brandRow
-                x: 22
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 10
-                opacity: win.reveal
-                SkullMark {
-                    id: brand
-                    objectName: "brand"
-                    size: 28
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
         }
 
         Sidebar {
