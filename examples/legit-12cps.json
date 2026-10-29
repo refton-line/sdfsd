@@ -1,0 +1,21 @@
+{
+  "format": "fake-clicker",
+  "version": 4,
+  "name": "Legit 12",
+  "settings": {
+    "mode": "legit",
+    "cps": 12,
+    "variance": 1,
+    "holdMs": 0,
+    "durationSec": 0,
+    "mouseButton": 0,
+    "countLimit": 0,
+    "startKey": 117,
+    "startMods": 0,
+    "stopKey": 119,
+    "stopMods": 0,
+    "launchDelaySec": 3,
+    "startExtra": [],
+    "stopExtra": []
+  }
+}
