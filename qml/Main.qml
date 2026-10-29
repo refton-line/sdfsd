@@ -72,6 +72,7 @@ ApplicationWindow {
     function setSystemFrame(value) {
         prefs.systemFrame = !!value;
         windowEffects.setCustomFrame(win, !prefs.systemFrame);
+        windowEffects.roundCorners(win);
     }
     // Native commands so Windows plays its own minimize/maximize/restore animations.
     function toggleMaximized() {
@@ -265,13 +266,6 @@ ApplicationWindow {
                     objectName: "brand"
                     size: 28
                     anchors.verticalCenter: parent.verticalCenter
-                }
-                Label {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "FAKE CLICKER"
-                    font.pixelSize: 13
-                    font.weight: Font.Black
-                    font.letterSpacing: 1.8
                 }
             }
             Row {

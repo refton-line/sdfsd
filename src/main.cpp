@@ -17,6 +17,7 @@
 #include <QQuickWindow>
 #include <QScreen>
 #include <QSettings>
+#include <QStyleHints>
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <shobjidl.h>
@@ -45,6 +46,9 @@ int main(int argc, char *argv[]) {
     grayscale.setFamily("Geist");
     app.setFont(grayscale);
     QQuickStyle::setStyle("Basic");
+    // The app is always dark. Without this Qt follows a light Windows theme and paints the standard
+    // title bar white, overriding the dark DWM attribute.
+    app.styleHints()->setColorScheme(Qt::ColorScheme::Dark);
     StartupController startup;
     ClickController clicks;
     ConfigStore configs(&clicks);
@@ -91,8 +95,8 @@ int main(int argc, char *argv[]) {
     if (engine.rootObjects().isEmpty())
         return 1;
     auto *win = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
-    effects.roundCorners(win);
     effects.setCustomFrame(win, !systemFrame);
+    effects.roundCorners(win);
     // Center once within this monitor's work area, title bar included; never bind x/y to changing
     // window dimensions.
     const QRect workArea = win->screen()->availableGeometry();
