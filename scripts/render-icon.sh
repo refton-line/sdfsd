@@ -16,8 +16,8 @@ full = body('bones') + body('jaw') + body('cranium')
 head = body('jaw') + body('cranium')
 svg = '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">{}</svg>'
 open(f'{out}/full.svg', 'w').write(svg.format(tile + f'<g transform="translate(30 30) scale(1.53)">{full}</g>'))
-# Small sizes: skull only, larger, on the same tile.
-open(f'{out}/small.svg', 'w').write(svg.format(tile + f'<g transform="translate(22 14) scale(1.66)">{head}</g>'))
+# Small sizes: skull only, larger and centred on the same tile.
+open(f'{out}/small.svg', 'w').write(svg.format(tile + f'<g transform="translate(14.1 34.7) scale(1.78)">{head}</g>'))
 PY
 for s in 32 48 64 128 256 1024; do rsvg-convert -w $s -h $s "$out/full.svg" -o "$out/icon-$s.png"; done
 for s in 16 24; do rsvg-convert -w $s -h $s "$out/small.svg" -o "$out/icon-$s.png"; done

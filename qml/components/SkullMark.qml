@@ -3,7 +3,8 @@ import QtQuick.Window
 import FakeClicker
 
 // Fake Clicker mark: a skull over two crossed bones. The jaw is a separate layer: `jaw` opens the
-// mouth (0 closed, 1 open) and chomp() snaps it shut twice, like a bite.
+// mouth (0 closed, 1 open) and chomp() snaps it shut twice, like a bite. Jaw and cranium carry
+// their own black backing, so the open mouth stays black instead of showing the bones.
 Item {
     id: mark
     property real size: 28

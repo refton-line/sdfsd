@@ -36,7 +36,12 @@ tracking. All text uses native grayscale rasterisation.
 ## Logo and launch
 
 The mark is a skull over two crossed bones (`assets/logo/*.svg`), drawn on one 128×128 artboard in
-three layers: bones (grey `#8E8E91`), jaw and cranium (`#F4F4F4`). The jaw is animated separately.
+three layers: bones (grey `#8E8E91`), jaw and cranium (`#F4F4F4`). It is drawn sober rather than
+cartoonish: anatomical proportions, a low brow over angular orbits, a sharp nasal opening,
+cheekbones, a tapered jaw with a squared chin, stencil-cut teeth and bones with real condyles. Jaw
+and cranium sit on black backings 1.3 units wider than the white, leaving a thin cut line between
+skull, jaw and bones; the line widens as the jaw opens and the mouth stays black. The jaw is
+animated separately.
 Launch shows the skull, the wordmark and a 2 px loading bar; the skull bites twice (open 130 ms,
 snap shut 85 ms, twice) while the bar fills with real startup progress, then the splash fades and
 the interface fades in. Launch takes about a second; closing is a 150 ms fade. The intro starts on
