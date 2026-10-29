@@ -2,17 +2,15 @@ import QtQuick
 import QtQuick.Templates as T
 import FakeClicker
 
-// Language, window frame, island overlay, interface sounds and version, in two columns. The app
+// Language, island overlay, interface sounds and version, in two columns. The app
 // has a single dark theme, so there is no appearance setting.
 Item {
     id: page
     property string language: "en"
-    property bool systemFrame: true
     property bool islandOverlay: true
     property bool soundsOn: true
     property int soundVolume: 70
     signal languageRequested(string code)
-    signal systemFrameRequested(bool value)
     signal islandOverlayRequested(bool value)
     signal soundsRequested(bool value)
     signal soundVolumeRequested(int value)
@@ -90,24 +88,6 @@ Item {
                                 }
                             }
                         }
-                    }
-                }
-            }
-
-            Panel {
-                title: I18n.t("settings.window")
-                width: parent.width
-                height: headerHeight + Theme.rowHeight + 4
-                SettingRow {
-                    icon: "winMax"
-                    title: I18n.t("look.frame")
-                    last: true
-                    AppSwitch {
-                        objectName: "systemFrameSwitch"
-                        anchors.verticalCenter: parent.verticalCenter
-                        checked: page.systemFrame
-                        Accessible.name: I18n.t("look.frame")
-                        onToggled: { page.systemFrameRequested(checked); checked = Qt.binding(() => page.systemFrame); }
                     }
                 }
             }

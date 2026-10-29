@@ -24,17 +24,15 @@ tracking. All text uses native grayscale rasterisation.
 
 ## Layout
 
-- **Title bar:** the standard Windows title bar by default (dark, via DWM). Under it a header with
-  the skull mark and the `FAKE CLICKER` wordmark on the left and the Dynamic Island in the centre.
-  Settings → Window switches live to the app's own title bar: the same header, draggable, with
-  window controls on the right (close turns red on hover); the client size stays the same.
+- **Title bar:** always the standard Windows title bar, dark: the app forces Qt's dark colour scheme
+  (otherwise Qt follows a light Windows theme and paints the bar white) and sets the DWM dark-mode
+  attribute. Under it a header with the skull mark on the left and the Dynamic Island in the centre.
 - **Sidebar:** Clicker, Hotkeys, Profiles, Settings and nothing else; the keys live on the Hotkeys page.
 - **Pages:** an uppercase title, then panels. Clicker has Mode (with one-line descriptions), Rate and
   Options (target window, button, variance or hold, time limit, click limit — each on its own
   labelled row). There is no session panel: countdown, live rate, clicks, time and Start/Stop are
   on the Dynamic Island.
-- **Settings:** two columns — Language, Window (standard Windows title bar on/off) and the
-  island-over-other-windows switch; Sound (on/off and volume) and About (clicking the skull makes
+- **Settings:** two columns — Language and the island-over-other-windows switch; Sound (on/off and volume) and About (clicking the skull makes
   it bite).
 
 ## Logo and launch

@@ -188,10 +188,7 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
     add(59300, [=] { call("setSounds", true); });
     add(61200, [=] { call("setSoundVolume", 40); });
     add(61550, [=] { shot("38-notice-volume"); });
-    add(63500, [=] { call("setSystemFrame", false); });
-    add(63850, [=] { shot("39-notice-custom-frame"); });
-    add(65800, [=] {
-        call("setSystemFrame", true);
+    add(63500, [=] {
         call("setSoundVolume", 70);
         engine->applyBindingSlot(false, 0, 117, 0);
         engine->setMouseButton(0);
@@ -200,7 +197,7 @@ void runCaptureHarness(QQuickWindow *win, const QString &output, ClickController
         engine->resetLaunchDelay();
         engine->setTarget("", "");
     });
-    add(68300, [=] {
+    add(66000, [=] {
         win->close();
         burst("99-closing", {40, 90, 140});
     });

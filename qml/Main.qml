@@ -10,14 +10,14 @@ ApplicationWindow {
     objectName: "mainWindow"
     visible: true
     title: "Fake Clicker"
-    readonly property real fit: Math.min(1, (Screen.desktopAvailableWidth - 48) / Theme.baseWidth, (Screen.desktopAvailableHeight - 48 - (startupSystemFrame ? 40 : 0)) / Theme.baseHeight)
+    readonly property real fit: Math.min(1, (Screen.desktopAvailableWidth - 48) / Theme.baseWidth, (Screen.desktopAvailableHeight - 88) / Theme.baseHeight)
     width: uiCapture ? Theme.baseWidth : Math.round(Theme.baseWidth * fit)
     height: uiCapture ? Theme.baseHeight : Math.round(Theme.baseHeight * fit)
     minimumWidth: Math.min(960, width)
     minimumHeight: Math.min(640, height)
     color: Theme.canvas
-    // Opens with the frame of the last session; setSystemFrame() switches it live.
-    flags: startupSystemFrame ? Qt.Window : Qt.Window | Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint | Qt.WindowSystemMenuHint
+    // Always the standard Windows title bar (dark, set natively in main.cpp).
+    flags: Qt.Window
 
     Settings {
         id: prefs
@@ -26,8 +26,7 @@ ApplicationWindow {
         property bool islandOverlay: true
         property bool soundsOn: true
         property int soundVolume: 70
-            property bool systemFrame: true
-        }
+    }
     Binding { target: sounds; property: "enabled"; value: prefs.soundsOn }
     Binding { target: sounds; property: "volume"; value: prefs.soundVolume }
 
@@ -42,8 +41,6 @@ ApplicationWindow {
     property real languageFade: 1
     property string pendingLanguage: ""
     readonly property bool maximized: visibility === Window.Maximized
-    // The standard Windows title bar (default) or the app's own with its window buttons.
-    readonly property bool systemFrame: prefs.systemFrame
     readonly property bool engineActive: clickEngine.active
     property bool lingering: false
     onActiveChanged: Theme.animating = active || uiCapture
@@ -68,20 +65,6 @@ ApplicationWindow {
     }
     function setSoundVolume(value) {
         prefs.soundVolume = Math.max(10, Math.min(100, Math.round(value / 10) * 10));
-    }
-    function setSystemFrame(value) {
-        prefs.systemFrame = !!value;
-        windowEffects.setCustomFrame(win, !prefs.systemFrame);
-    }
-    // Native commands so Windows plays its own minimize/maximize/restore animations.
-    function toggleMaximized() {
-        if (!windowEffects.toggleMaximize(win)) {
-            if (maximized) showNormal(); else showMaximized();
-        }
-    }
-    function minimizeWindow() {
-        if (!windowEffects.minimize(win))
-            showMinimized();
     }
 
     Component.onCompleted: {
@@ -207,7 +190,6 @@ ApplicationWindow {
         readonly property bool overlayOn: prefs.islandOverlay
         readonly property bool soundOn: prefs.soundsOn
         readonly property int volume: prefs.soundVolume
-        readonly property bool frameOn: prefs.systemFrame
         onCpsChanged: say("gauge", I18n.t("section.rate"), I18n.rate(cps) + " " + I18n.t("cps"))
         onButtonChanged: say("mouse", I18n.t("button"), I18n.t("button." + button))
         onVarianceChanged: say("wave", I18n.t("variance"), I18n.t("variance." + variance))
@@ -221,7 +203,6 @@ ApplicationWindow {
         onOverlayOnChanged: say(overlayOn ? "overlay" : "overlayOff", I18n.t("look.island"), I18n.t(overlayOn ? "on" : "off"), overlayOn ? "on" : "off")
         onSoundOnChanged: say(soundOn ? "volume" : "volumeOff", I18n.t("sound.effects"), I18n.t(soundOn ? "on" : "off"), soundOn ? "on" : "off")
         onVolumeChanged: say("volume", I18n.t("sound.volume"), volume + " %")
-        onFrameOnChanged: say("winMax", I18n.t("look.frame"), I18n.t(frameOn ? "on" : "off"), frameOn ? "on" : "off")
     }
     KeyboardSheet {
         id: keyboard
@@ -242,18 +223,11 @@ ApplicationWindow {
         anchors.fill: parent
         opacity: 1 - win.farewell
 
-        // Title bar: brand on the left, the island in the middle, window controls on the right.
+        // Header under the Windows title bar: the skull on the left, the island in the middle.
         Item {
             id: titleBar
             width: parent.width
             height: Theme.titleBar
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton
-                enabled: !win.systemFrame     // the Windows title bar moves the window itself
-                onPressed: win.startSystemMove()
-                onDoubleClicked: win.toggleMaximized()
-            }
             Row {
                 id: brandRow
                 x: 22
@@ -265,31 +239,6 @@ ApplicationWindow {
                     objectName: "brand"
                     size: 28
                     anchors.verticalCenter: parent.verticalCenter
-                }
-                Label {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "FAKE CLICKER"
-                    font.pixelSize: 13
-                    font.weight: Font.Black
-                    font.letterSpacing: 1.8
-                }
-            }
-            Row {
-                anchors.right: parent.right; anchors.rightMargin: 12
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-                opacity: win.reveal
-                visible: !win.systemFrame
-                AppButton { kind: "plain"; compact: true; width: 36; height: 32; iconName: "winMin"; iconSize: 15; Accessible.name: I18n.t("win.minimize"); onClicked: win.minimizeWindow() }
-                AppButton { objectName: "maximizeButton"; kind: "plain"; compact: true; width: 36; height: 32; iconName: win.maximized ? "winRestore" : "winMax"; iconSize: 15; Accessible.name: I18n.t(win.maximized ? "win.restore" : "win.maximize"); onClicked: win.toggleMaximized() }
-                AppButton {
-                    objectName: "closeButton"
-                    kind: hovered ? "danger" : "plain"
-                    compact: true
-                    cue: ""      // the window is gone before a click would finish
-                    width: 36; height: 32; iconName: "winClose"; iconSize: 15
-                    Accessible.name: I18n.t("win.close")
-                    onClicked: win.close()
                 }
             }
         }
@@ -328,12 +277,10 @@ ApplicationWindow {
                 SettingsPage {
                     anchors.fill: parent
                     language: I18n.language
-                    systemFrame: prefs.systemFrame
                     islandOverlay: prefs.islandOverlay
                     soundsOn: prefs.soundsOn
                     soundVolume: prefs.soundVolume
                     onLanguageRequested: code => win.setLanguage(code)
-                    onSystemFrameRequested: value => win.setSystemFrame(value)
                     onIslandOverlayRequested: value => win.setIslandOverlay(value)
                     onSoundsRequested: value => win.setSounds(value)
                     onSoundVolumeRequested: value => win.setSoundVolume(value)
@@ -410,32 +357,6 @@ ApplicationWindow {
             y: Theme.pageHeader
             width: parent.width
             height: parent.height - y
-        }
-    }
-
-    // Frameless resize edges.
-    Repeater {
-        model: [
-            { e: Qt.LeftEdge, c: Qt.SizeHorCursor }, { e: Qt.RightEdge, c: Qt.SizeHorCursor },
-            { e: Qt.TopEdge, c: Qt.SizeVerCursor }, { e: Qt.BottomEdge, c: Qt.SizeVerCursor },
-            { e: Qt.LeftEdge | Qt.TopEdge, c: Qt.SizeFDiagCursor }, { e: Qt.RightEdge | Qt.BottomEdge, c: Qt.SizeFDiagCursor },
-            { e: Qt.RightEdge | Qt.TopEdge, c: Qt.SizeBDiagCursor }, { e: Qt.LeftEdge | Qt.BottomEdge, c: Qt.SizeBDiagCursor }
-        ]
-        MouseArea {
-            required property var modelData
-            readonly property bool onLeft: modelData.e & Qt.LeftEdge
-            readonly property bool onRight: modelData.e & Qt.RightEdge
-            readonly property bool onTop: modelData.e & Qt.TopEdge
-            readonly property bool onBottom: modelData.e & Qt.BottomEdge
-            readonly property bool corner: (onLeft || onRight) && (onTop || onBottom)
-            x: onRight ? win.width - (corner ? 8 : 5) : onLeft ? 0 : 8
-            y: onBottom ? win.height - (corner ? 8 : 5) : onTop ? 0 : 8
-            width: onLeft || onRight ? (corner ? 8 : 5) : win.width - 16
-            height: onTop || onBottom ? (corner ? 8 : 4) : win.height - 16
-            enabled: !win.maximized && !win.systemFrame
-            hoverEnabled: true
-            cursorShape: modelData.c
-            onPressed: win.startSystemResize(modelData.e)
         }
     }
 }

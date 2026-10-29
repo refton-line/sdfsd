@@ -12,14 +12,4 @@ class WindowEffects final : public QObject {
     // Never take focus or mouse input, so the click target keeps foreground and cursor.
     Q_INVOKABLE void makePassive(QWindow *window);
     Q_INVOKABLE void roundCorners(QWindow *window);
-    // The standard Windows title bar, or the app's own (custom). The custom frame keeps an invisible
-    // native frame so Windows still animates minimize, maximize, restore and Snap. Switching keeps the
-    // client size.
-    Q_INVOKABLE void setCustomFrame(QWindow *window, bool custom);
-    // Standard window commands with the system animations; false when unavailable (not Windows).
-    Q_INVOKABLE bool minimize(QWindow *window);
-    Q_INVOKABLE bool toggleMaximize(QWindow *window);
-
-  private:
-    bool m_nativeFrame = false;
 };

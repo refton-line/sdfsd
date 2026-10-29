@@ -13,9 +13,9 @@
 - Motion contracts: 28 QML files; hover colour changes are instant; no springs, overshoot, glass or blur.
 
 ## Screenshots (`--capture`, Linux/Xvfb/Mesa OpenGL, synthetic engine states, no real clicks)
-- `screenshots/`: 42 PNGs — launch, Legit/Blatant, island (expanded, notices, countdown, running, summary,
-  error), hotkeys and key sheet, profiles and save sheet, two-column settings (Window, Sound), Russian
-  pages, overlay island, window picker, the sounds-off, volume and custom-frame notices, closing fade.
+- `screenshots/`: 41 PNGs — launch, Legit/Blatant, island (expanded, notices, countdown, running, summary,
+  error), hotkeys and key sheet, profiles and save sheet, two-column settings (Sound), Russian
+  pages, overlay island, window picker, the sounds-off and volume notices, closing fade.
   The Clicker page has no session panel; the target window is the first Options row.
 - `screenshots/launch/`: 13 slow-motion launch frames (`FAKECLICKER_MOTION_SCALE=6`): two jaw bites,
   loading bar, fade into the interface. `screenshots/sheets/` holds contact sheets.
@@ -35,7 +35,7 @@
 - Cross-built with MinGW-w64 GCC 13 (posix) on Ubuntu 24.04 against Qt 6.8.3 mingw_64.
 - Static PE import audit: 110 PE files, 53 DLLs copied, 0 unresolved non-system DLLs (`dependency-audit.json`).
   Sound adds no DLL: `xaudio2_9.dll` is loaded from System32 at run time.
-- Wine 9.0 smoke run (Xvfb + Mesa): the packaged `FakeClicker.exe --capture` finished the same 42-screen
+- Wine 9.0 smoke run (Xvfb + Mesa): the packaged `FakeClicker.exe --capture` finished the same 41-screen
   tour with exit code 0. Against the Linux screenshots, Hotkeys and Settings differ by 0 px and the
   other compared screens by under 1 % (anti-aliasing). Contact sheet: `screenshots/sheets/windows-wine.png`.
 - Wine audio, recorded from a PulseAudio null sink: every cue after launch was found in the recording
@@ -47,11 +47,11 @@
 - No audio device: Wine's XAudio2 crashed inside `CreateMasteringVoice` (divide by zero in
   `xaudio2_9.dll`) when neither PulseAudio nor ALSA had an output. Found by the final check and fixed
   by asking MMDevAPI for a default output device first; the packaged tour now finishes with no device
-  (exit 0, 42 screens, sounds stay off; rechecked on the final build) and with one (sounds play).
+  (exit 0, 41 screens, sounds stay off; rechecked on the final build) and with one (sounds play).
 
 ## Not verified
 Not run on real Windows 10/11; Wine is not Windows. Real `SendInput` delivery and rates, Raw Input
 hotkeys on physical keyboards, focus/cursor safety with real windows, the click-through overlay over
-other apps, DPI scaling, the standard title bar and the live switch to the custom one, SmartScreen (the EXE is unsigned) and how the
+other apps, DPI scaling, the dark standard title bar (white bar on start fixed by forcing the dark colour scheme), SmartScreen (the EXE is unsigned) and how the
 sounds actually sound through XAudio2 on real hardware (level, latency, switching audio devices)
 need a check on Windows. `FakeClickerReceiver.exe` helps measure the delivered rate.

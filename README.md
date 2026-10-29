@@ -20,8 +20,7 @@ timer-paced and practically tops out around ~1000 CPS; uncapped throughput is a 
 ## Interface
 - **Launch:** the skull bites twice while the loading bar fills with real startup progress, then the
   interface fades in (about a second). Closing is a short fade.
-- **Layout:** the standard Windows title bar (Settings → Window switches to the app's own, with its
-  own window buttons); under it the skull, the wordmark and the island in the centre; a sidebar with
+- **Layout:** the standard dark Windows title bar; under it the skull and the island in the centre; a sidebar with
   Clicker, Hotkeys, Profiles and Settings; pages with uppercase titles and graphite panels. The
   Clicker page holds Mode, Rate and Options (window, button, variance or hold, limits); countdown,
   live rate, clicks and Start/Stop are on the island.

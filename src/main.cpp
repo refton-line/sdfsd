@@ -16,7 +16,7 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QScreen>
-#include <QSettings>
+#include <QStyleHints>
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <shobjidl.h>
@@ -45,6 +45,9 @@ int main(int argc, char *argv[]) {
     grayscale.setFamily("Geist");
     app.setFont(grayscale);
     QQuickStyle::setStyle("Basic");
+    // The app is always dark. Without this Qt follows a light Windows theme and paints the standard
+    // title bar white, overriding the dark DWM attribute.
+    app.styleHints()->setColorScheme(Qt::ColorScheme::Dark);
     StartupController startup;
     ClickController clicks;
     ConfigStore configs(&clicks);
@@ -69,9 +72,6 @@ int main(int argc, char *argv[]) {
                                 ? qMax(1, qEnvironmentVariableIntValue("FAKECLICKER_MOTION_SCALE"))
                                 : 1;
     engine.rootContext()->setContextProperty("motionScale", motionScale);
-    // The window opens with the frame of the last session; Settings switches it live.
-    const bool systemFrame = QSettings().value("ui/systemFrame", true).toBool();
-    engine.rootContext()->setContextProperty("startupSystemFrame", systemFrame);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
         [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
@@ -92,7 +92,6 @@ int main(int argc, char *argv[]) {
         return 1;
     auto *win = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
     effects.roundCorners(win);
-    effects.setCustomFrame(win, !systemFrame);
     // Center once within this monitor's work area, title bar included; never bind x/y to changing
     // window dimensions.
     const QRect workArea = win->screen()->availableGeometry();
