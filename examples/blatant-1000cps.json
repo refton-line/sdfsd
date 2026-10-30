@@ -1,0 +1,23 @@
+{
+  "format": "light-clicker",
+  "version": 4,
+  "name": "Blatant 1000",
+  "settings": {
+    "mode": "blatant",
+    "cps": 1000,
+    "variance": 1,
+    "holdMs": 0,
+    "durationSec": 30,
+    "mouseButton": 0,
+    "countLimit": 0,
+    "startKey": 117,
+    "startMods": 0,
+    "stopKey": 119,
+    "stopMods": 0,
+    "launchDelaySec": 3,
+    "startExtra": [],
+    "stopExtra": [{ "key": 27, "mods": 0, "keys": [27] }],
+    "startChord": [],
+    "stopChord": []
+  }
+}
